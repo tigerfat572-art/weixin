@@ -3,473 +3,610 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-  <title>微信魔术名片</title>
+  <title>微信魔术添加好友</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <style>
-    :root { --green: #07c160; --wx-black: #1a1a1a; --wx-gray: #8e8e93; }
-    * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; }
-    body, html { height: 100%; width: 100%; overflow: hidden; background: #fff; }
+    /* 全局变量 */
+    :root {
+      --wx-black: #1a1a1a;
+      --wx-gray: #8e8e93;
+      --wx-white: #fff;
+    }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: -apple-system, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+    body, html {
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+    }
 
-    /* 隐藏所有层，通过JS控制显示 */
-    .layer { display: none; width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
-    
-    /* === 1. 配置层样式 === */
-    #layer-config { background: #f5f5f5; padding: 20px; overflow-y: auto; z-index: 999; display: block; }
-    .cfg-group { background: #fff; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
-    .cfg-label { display: block; font-size: 14px; font-weight: bold; color: #555; margin-bottom: 8px; }
-    .cfg-input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
-    .btn-start { width: 100%; padding: 15px; background: var(--green); color: #fff; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; }
-    .warning-box { background: #fffbe6; border: 1px solid #ffe58f; padding: 10px; font-size: 12px; color: #d48806; margin-bottom: 15px; border-radius: 4px; line-height: 1.5; }
+    /* 层控制：默认隐藏，JS控制显示 */
+    .layer {
+      display: none;
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
 
-    /* === 2. 假二维码展示层 (仿微信UI) === */
-    #layer-display { background: #fff; flex-direction: column; z-index: 100; }
-    .nav { height: 44px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; margin-top: env(safe-area-inset-top); }
-    .icon-back { width: 12px; height: 12px; border-left: 2px solid #000; border-bottom: 2px solid #000; transform: rotate(45deg); }
-    .icon-more { width: 24px; height: 24px; background-image: radial-gradient(circle, #000 2px, transparent 0); background-size: 8px 100%; }
-    
-    .card-info { padding: 30px 40px 10px; display: flex; align-items: center; gap: 20px; }
-    .card-avatar { width: 64px; height: 64px; border-radius: 6px; background: #eee center/cover; flex-shrink: 0; }
-    .card-text h2 { font-size: 22px; font-weight: 600; color: #000; margin-bottom: 5px; }
-    .card-text p { font-size: 14px; color: #7f7f7f; }
+    /* === 1. 设置端：配置面板 === */
+    #layer-config {
+      background: #f5f5f5;
+      padding: 20px;
+      overflow-y: auto;
+      z-index: 999;
+      display: block;
+    }
+    .cfg-title {
+      text-align: center;
+      font-size: 20px;
+      font-weight: bold;
+      margin-bottom: 20px;
+    }
+    .warning-box {
+      background: #fffbe6;
+      border: 1px solid #ffe58f;
+      padding: 10px;
+      font-size: 12px;
+      color: #d48806;
+      margin-bottom: 15px;
+      border-radius: 4px;
+      line-height: 1.5;
+    }
+    .cfg-group {
+      background: #fff;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+    }
+    .cfg-label {
+      display: block;
+      font-size: 14px;
+      font-weight: bold;
+      color: #555;
+      margin-bottom: 8px;
+    }
+    .cfg-input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    .btn-start {
+      width: 100%;
+      padding: 15px;
+      background: #07c160;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: bold;
+    }
 
-    .qr-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding-bottom: 80px; }
-    .qr-frame { width: 280px; height: 280px; position: relative; }
-    .wx-center-logo { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 44px; height: 44px; background: #fff; border-radius: 6px; border: 4px solid #fff; display: flex; justify-content: center; align-items: center; }
-    .tips { margin-top: 25px; color: #b2b2b2; font-size: 14px; letter-spacing: 0.5px; }
-    
-    .bottom-menu { position: absolute; bottom: 40px; width: 100%; display: flex; justify-content: center; gap: 50px; padding-bottom: env(safe-area-inset-bottom); }
-    .menu-item { color: #576b95; font-size: 14px; font-weight: 500; }
+    /* === 2. 设置端：假二维码界面（观众看的二维码界面） === */
+    #layer-display {
+      background: var(--wx-white);
+      flex-direction: column;
+      z-index: 100;
+    }
+    .display-nav {
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      margin-top: env(safe-area-inset-top);
+    }
+    .icon-back {
+      width: 12px;
+      height: 12px;
+      border-left: 2px solid #000;
+      border-bottom: 2px solid #000;
+      transform: rotate(45deg);
+    }
+    .icon-more {
+      width: 24px;
+      height: 24px;
+      background-image: radial-gradient(circle, #000 2px, transparent 0);
+      background-size: 8px 100%;
+    }
+    .display-card {
+      padding: 30px 40px 10px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    .display-avatar {
+      width: 64px;
+      height: 64px;
+      border-radius: 6px;
+      background: #eee center/cover;
+      flex-shrink: 0;
+    }
+    .display-info h2 {
+      font-size: 22px;
+      font-weight: 600;
+      color: #000;
+      margin-bottom: 5px;
+    }
+    .display-info p {
+      font-size: 14px;
+      color: #7f7f7f;
+    }
+    .display-qr-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding-bottom: 80px;
+    }
+    .qr-frame {
+      width: 280px;
+      height: 280px;
+      position: relative;
+    }
+    .wx-logo {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 44px;
+      height: 44px;
+      background: #fff;
+      border-radius: 6px;
+      border: 4px solid #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .display-tips {
+      margin-top: 25px;
+      color: #b2b2b2;
+      font-size: 14px;
+      letter-spacing: 0.5px;
+    }
+    .display-bottom-menu {
+      position: absolute;
+      bottom: 40px;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      gap: 50px;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    .menu-item {
+      color: #576b95;
+      font-size: 14px;
+      font-weight: 500;
+    }
 
-    /* === 3. 魔术互动层 (匹配你提供的黑色界面样式) === */
-    #layer-magic { 
-      background: var(--wx-black); /* 黑色背景 */
-      flex-direction: column; 
-      overflow: hidden; 
-      color: #fff; /* 文字默认白色 */
+    /* === 3. 观众端：假添加好友界面（和你给的图完全一致） === */
+    #layer-magic {
+      background: var(--wx-black);
+      color: var(--wx-white);
+      z-index: 50;
     }
-    .magic-nav { 
-      height: 44px; 
-      background: var(--wx-black); 
-      display: flex; 
-      align-items: center; 
-      padding: 0 15px; 
-      border-bottom: 0.5px solid rgba(255,255,255,0.1); /* 白色浅边框 */
+    .magic-nav {
+      height: 44px;
+      display: flex;
+      align-items: center;
+      padding: 0 15px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
     }
-    .magic-nav .icon-back { 
-      border-left: 2px solid #fff; 
-      border-bottom: 2px solid #fff; 
+    .magic-nav .icon-back {
+      border-left: 2px solid var(--wx-white);
+      border-bottom: 2px solid var(--wx-white);
     }
-    .magic-nav .icon-more { 
-      background-image: radial-gradient(circle, #fff 2px, transparent 0); 
+    .magic-nav .icon-more {
+      background-image: radial-gradient(circle, var(--wx-white) 2px, transparent 0);
+      margin-left: auto;
     }
-    .magic-content { padding-top: 10px; }
-    
-    /* 顶部个人信息区域 */
-    .magic-header { 
-      padding: 15px; 
-      display: flex; 
-      align-items: center; 
-      gap: 15px; 
+    .magic-header {
+      padding: 15px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
     }
-    .m-avatar { 
-      width: 60px; 
-      height: 60px; 
-      border-radius: 8px; 
-      background: #eee center/cover; 
+    .magic-avatar {
+      width: 60px;
+      height: 60px;
+      border-radius: 8px;
+      background: #eee center/cover;
     }
-    .m-info { flex: 1; }
-    .m-name { 
-      font-size: 18px; 
-      font-weight: 600; 
-      display: flex; 
-      align-items: center; 
-      gap: 5px; 
+    .magic-user-info h2 {
+      font-size: 18px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 5px;
     }
-    .m-name .verify-icon { 
-      width: 16px; 
-      height: 16px; 
-      background: url('https://img.icons8.com/fluency/48/00b4ff/verified-account.png') center/cover; 
+    .verify-icon {
+      width: 16px;
+      height: 16px;
+      background: url('https://img.icons8.com/fluency/48/00b4ff/verified-account.png') center/cover;
     }
-    .m-region { 
-      font-size: 14px; 
-      color: var(--wx-gray); 
-      margin-top: 3px; 
+    .magic-user-info p {
+      font-size: 14px;
+      color: var(--wx-gray);
+      margin-top: 3px;
     }
-    
-    /* 资料列表区域 */
-    .magic-list { 
-      margin-top: 10px; 
-      border-top: 1px solid rgba(255,255,255,0.1); 
+    .magic-list {
+      margin-top: 10px;
+      border-top: 1px solid rgba(255,255,255,0.1);
     }
-    .magic-item { 
-      height: 50px; 
-      display: flex; 
-      align-items: center; 
-      padding: 0 15px; 
-      border-bottom: 1px solid rgba(255,255,255,0.1); 
+    .magic-list-item {
+      height: 50px;
+      display: flex;
+      align-items: center;
+      padding: 0 15px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
     }
-    .item-label { 
-      font-size: 16px; 
-      color: var(--wx-gray); 
-      width: 80px; 
+    .item-label {
+      font-size: 16px;
+      color: var(--wx-gray);
+      width: 80px;
     }
-    .item-content { 
-      flex: 1; 
-      font-size: 16px; 
-      display: flex; 
-      align-items: center; 
-      justify-content: space-between; 
+    .item-content {
+      flex: 1;
+      font-size: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
-    .item-arrow { 
-      color: var(--wx-gray); 
-      font-family: monospace; 
-      font-weight: bold; 
-      transform: scaleY(1.5); 
+    .item-arrow {
+      color: var(--wx-gray);
+      font-family: monospace;
+      font-weight: bold;
+      transform: scaleY(1.5);
     }
-    
-    /* 红心元素（放在签名区域） */
-    .m-sign-box { 
-      position: relative; 
-      display: flex; 
-      align-items: center; 
+    /* 红心元素（放在个性签名区域） */
+    .sign-box {
+      position: relative;
+      width: 100%;
     }
-    .m-sign { flex: 1; }
+    .magic-sign {
+      width: 100%;
+    }
     .heart {
-      position: absolute; 
-      width: 20px; 
-      height: 20px; 
-      right: 10px; /* 放在签名右侧 */
-      top: 50%; 
+      position: absolute;
+      right: 0;
+      top: 50%;
       transform: translateY(-50%);
-      z-index: 1000; 
-      font-size: 20px; 
+      width: 20px;
+      height: 20px;
+      font-size: 20px;
       line-height: 1;
-      cursor: move; 
+      cursor: move;
       touch-action: none;
+      z-index: 1000;
     }
-    .heart::after { content: "❤️"; }
-    
+    .heart::after {
+      content: "❤️";
+    }
     /* 添加到通讯录按钮 */
-    .add-btn { 
-      margin: 20px 15px; 
-      height: 45px; 
-      background: #333; 
-      border-radius: 8px; 
-      display: flex; 
-      justify-content: center; 
-      align-items: center; 
-      font-size: 17px; 
-      color: var(--wx-gray); /* 置灰样式 */
+    .add-btn {
+      margin: 20px 15px;
+      height: 45px;
+      background: #333;
+      border-radius: 8px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 17px;
+      color: var(--wx-gray);
     }
-
     /* 加载层 */
-    .loading-mask { 
-      position: fixed; 
-      top: 0; 
-      left: 0; 
-      width: 100%; 
-      height: 100%; 
-      background: rgba(26,26,26,0.9); 
-      z-index: 2000; 
-      display: none; 
-      justify-content: center; 
-      align-items: center; 
-      flex-direction: column; 
+    .loading-mask {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(26,26,26,0.9);
+      z-index: 2000;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
     }
-    .spinner { 
-      width: 30px; 
-      height: 30px; 
-      border: 3px solid #444; 
-      border-top-color: #fff; 
-      border-radius: 50%; 
-      animation: spin 0.8s linear infinite; 
+    .spinner {
+      width: 30px;
+      height: 30px;
+      border: 3px solid #444;
+      border-top-color: var(--wx-white);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
     }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .loading-text { 
-      margin-top: 15px; 
-      font-size: 14px; 
-      color: #ccc; 
+    @keyframes spin {
+      to { transform: rotate(360deg); }
     }
-
+    .loading-text {
+      margin-top: 15px;
+      font-size: 14px;
+      color: #ccc;
+    }
   </style>
 </head>
 <body>
 
-  <!-- 1. 配置面板 -->
+  <!-- 1. 设置端：配置面板 -->
   <div id="layer-config" class="layer">
-    <div style="text-align:center; margin-bottom:20px; font-size:20px; font-weight:bold;">🛠️ 微信魔术控制台</div>
-    
+    <div class="cfg-title">🛠️ 微信魔术配置</div>
     <div class="warning-box">
-      ⚠️ <b>重要提示</b>：<br>
-      请将文件上传到<b>HTTPS服务器</b>（如Netlify/Vercel），微信仅支持HTTPS链接扫码。<br>
-      本地打开二维码会无法扫描！
+      ⚠️ 请将文件上传到<b>HTTPS服务器</b>（如Netlify/Vercel），微信仅支持HTTPS扫码！
     </div>
-
     <div class="cfg-group">
-      <label class="cfg-label">头像链接 (网络图片URL)</label>
-      <input type="text" id="in-avatar" class="cfg-input" value="https://example.com/avatar.jpg" placeholder="https://...">
+      <label class="cfg-label">头像链接（网络URL）</label>
+      <input type="text" id="cfg-avatar" class="cfg-input" value="https://example.com/avatar.jpg" placeholder="https://...">
     </div>
     <div class="cfg-group">
       <label class="cfg-label">昵称</label>
-      <input type="text" id="in-name" class="cfg-input" value="冯唐骏">
+      <input type="text" id="cfg-name" class="cfg-input" value="冯唐骏">
     </div>
     <div class="cfg-group">
       <label class="cfg-label">地区</label>
-      <input type="text" id="in-region" class="cfg-input" value="浙江 杭州">
-    </div>
-    <div class="cfg-group">
-      <label class="cfg-label">微信号 (展示用)</label>
-      <input type="text" id="in-showid" class="cfg-input" value="FengTangJun">
+      <input type="text" id="cfg-region" class="cfg-input" value="浙江 杭州">
     </div>
     <div class="cfg-group">
       <label class="cfg-label">个性签名</label>
-      <input type="text" id="in-sign" class="cfg-input" value="我爱果汁，我爱果汁，我爱果汁">
+      <input type="text" id="cfg-sign" class="cfg-input" value="我爱果汁，我爱果汁，我爱果汁">
     </div>
-    <div class="cfg-group" style="border: 1px solid var(--green);">
-      <label class="cfg-label" style="color:var(--green)">真实微信号/ID (必填)</label>
-      <input type="text" id="in-target" class="cfg-input" placeholder="例如：wxid_123456789 或 FengTangJun">
+    <div class="cfg-group" style="border:1px solid #07c160;">
+      <label class="cfg-label" style="color:#07c160">真实微信号/ID（必填）</label>
+      <input type="text" id="cfg-target" class="cfg-input" placeholder="例如：wxid_123456789">
     </div>
-
-    <button class="btn-start" onclick="generateQR()">生成魔术二维码</button>
+    <button class="btn-start" onclick="generateFakeQR()">生成假二维码界面</button>
   </div>
 
-  <!-- 2. 假二维码展示层 (你的手机显示) -->
-  <div id="layer-display" class="layer" style="display:none">
-    <div class="nav">
+  <!-- 2. 设置端：假二维码界面（给观众扫的界面） -->
+  <div id="layer-display" class="layer">
+    <div class="display-nav">
       <div class="icon-back" onclick="location.reload()"></div>
       <div class="icon-more"></div>
     </div>
-    <div class="card-info">
-      <div class="card-avatar" id="d-avatar"></div>
-      <div class="card-text">
-        <h2 id="d-name"></h2>
-        <p id="d-region"></p>
+    <div class="display-card">
+      <div class="display-avatar" id="display-avatar"></div>
+      <div class="display-info">
+        <h2 id="display-name"></h2>
+        <p id="display-region"></p>
       </div>
     </div>
-    <div class="qr-area">
+    <div class="display-qr-area">
       <div class="qr-frame">
-        <div id="qrcode-box"></div>
-        <div class="wx-center-logo">
-          <svg width="30" height="30" viewBox="0 0 28 28" fill="#191919"><path d="M10.5 17.5c-5.8 0-10.5-3.9-10.5-8.75S4.7 0 10.5 0c5.8 0 10.5 3.9 10.5 8.75 0 1.05-.2 2.05-.6 3L23 15l-3.2-1.6c-1.3.8-2.8 1.3-4.4 1.3h-4.9zM20 18.5c0-3.3-3.1-6-7-6s-7 2.7-7 6c0 3.3 3.1 6 7 6 1.3 0 2.5-.3 3.5-.9L20 26l-1-2.4c2.4-1 4-2.8 4-5.1z"/></svg>
+        <div id="qrcode-container"></div>
+        <div class="wx-logo">
+          <svg width="30" height="30" viewBox="0 0 28 28" fill="#191919">
+            <path d="M10.5 17.5c-5.8 0-10.5-3.9-10.5-8.75S4.7 0 10.5 0c5.8 0 10.5 3.9 10.5 8.75 0 1.05-.2 2.05-.6 3L23 15l-3.2-1.6c-1.3.8-2.8 1.3-4.4 1.3h-4.9zM20 18.5c0-3.3-3.1-6-7-6s-7 2.7-7 6c0 3.3 3.1 6 7 6 1.3 0 2.5-.3 3.5-.9L20 26l-1-2.4c2.4-1 4-2.8 4-5.1z"/>
+          </svg>
         </div>
       </div>
-      <div class="tips">扫一扫上面的二维码图案，加我为朋友。</div>
+      <div class="display-tips">扫一扫上面的二维码图案，加我为朋友。</div>
     </div>
-    <div class="bottom-menu">
+    <div class="display-bottom-menu">
       <span class="menu-item">扫一扫</span>
       <span class="menu-item">换个样式</span>
       <span class="menu-item">保存图片</span>
     </div>
   </div>
 
-  <!-- 3. 魔术互动层 (匹配你提供的黑色界面) -->
-  <div id="layer-magic" class="layer" style="display:none">
+  <!-- 3. 观众端：假添加好友界面（和你给的图完全一致） -->
+  <div id="layer-magic" class="layer">
     <div class="magic-nav">
       <div class="icon-back" onclick="history.back()"></div>
-      <div class="icon-more" style="margin-left:auto"></div>
+      <div class="icon-more"></div>
     </div>
-    <div class="magic-content">
-      <!-- 顶部个人信息 -->
-      <div class="magic-header">
-        <div class="m-avatar" id="m-avatar"></div>
-        <div class="m-info">
-          <div class="m-name" id="m-name">
-            冯唐骏
-            <div class="verify-icon"></div> <!-- 认证标识 -->
-          </div>
-          <div class="m-region" id="m-region">地区: 浙江 杭州</div>
+    <div class="magic-header">
+      <div class="magic-avatar" id="magic-avatar"></div>
+      <div class="magic-user-info">
+        <h2 id="magic-name">冯唐骏 <div class="verify-icon"></div></h2>
+        <p id="magic-region">地区: 浙江 杭州</p>
+      </div>
+    </div>
+    <div class="magic-list">
+      <div class="magic-list-item">
+        <div class="item-label">朋友资料</div>
+        <div class="item-content">
+          <span></span>
+          <span class="item-arrow">></span>
         </div>
       </div>
-
-      <!-- 资料列表 -->
-      <div class="magic-list">
-        <div class="magic-item">
-          <div class="item-label">朋友资料</div>
-          <div class="item-content">
-            <span></span>
-            <span class="item-arrow">></span>
+      <div class="magic-list-item">
+        <div class="item-label">签名</div>
+        <div class="item-content">
+          <div class="sign-box">
+            <div class="magic-sign" id="magic-sign">我爱果汁，我爱果汁，我爱果汁</div>
+            <div class="heart" id="magic-heart"></div>
           </div>
-        </div>
-        <div class="magic-item">
-          <div class="item-label">签名</div>
-          <div class="item-content">
-            <div class="m-sign-box">
-              <div class="m-sign" id="m-sign">我爱果汁，我爱果汁，我爱果汁</div>
-              <div class="heart" id="magic-heart"></div> <!-- 红心放在签名右侧 -->
-            </div>
-            <span class="item-arrow">></span>
-          </div>
-        </div>
-        <div class="magic-item">
-          <div class="item-label">朋友圈</div>
-          <div class="item-content">
-            <span></span>
-            <span class="item-arrow">></span>
-          </div>
-        </div>
-        <div class="magic-item">
-          <div class="item-label">视频号</div>
-          <div class="item-content">
-            <span id="m-videoid">冯唐骏</span>
-            <span class="item-arrow">></span>
-          </div>
+          <span class="item-arrow">></span>
         </div>
       </div>
-
-      <!-- 添加到通讯录按钮 -->
-      <div class="add-btn">添加到通讯录</div>
+      <div class="magic-list-item">
+        <div class="item-label">朋友圈</div>
+        <div class="item-content">
+          <span></span>
+          <span class="item-arrow">></span>
+        </div>
+      </div>
+      <div class="magic-list-item">
+        <div class="item-label">视频号</div>
+        <div class="item-content">
+          <span id="magic-videoid">冯唐骏</span>
+          <span class="item-arrow">></span>
+        </div>
+      </div>
     </div>
-    <div class="loading-mask" id="loading">
+    <div class="add-btn">添加到通讯录</div>
+    <div class="loading-mask" id="loading-mask">
       <div class="spinner"></div>
       <div class="loading-text">正在跳转...</div>
     </div>
   </div>
 
   <script>
-    // === 核心逻辑 ===
+    // 页面加载时判断模式（设置端/观众端）
     window.onload = function() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const encodedData = urlParams.get('data');
-      if (encodedData) initMagicMode(encodedData);
-      else document.getElementById('layer-config').style.display = 'block';
+      const params = new URLSearchParams(window.location.search);
+      const magicData = params.get('data');
+      if (magicData) {
+        // 观众端：解析数据并显示假界面
+        initMagicInterface(magicData);
+      } else {
+        // 设置端：显示配置面板
+        document.getElementById('layer-config').style.display = 'block';
+      }
     };
 
-    // 生成魔术二维码
-    function generateQR() {
+    // 设置端：生成假二维码界面
+    function generateFakeQR() {
+      // 获取配置信息
       const config = {
-        av: document.getElementById('in-avatar').value,
-        nm: document.getElementById('in-name').value,
-        rg: document.getElementById('in-region').value,
-        id: document.getElementById('in-showid').value,
-        sg: document.getElementById('in-sign').value,
-        tg: document.getElementById('in-target').value,
-        vd: document.getElementById('in-name').value // 视频号默认同昵称
+        avatar: document.getElementById('cfg-avatar').value,
+        name: document.getElementById('cfg-name').value,
+        region: document.getElementById('cfg-region').value,
+        sign: document.getElementById('cfg-sign').value,
+        target: document.getElementById('cfg-target').value,
+        videoid: document.getElementById('cfg-name').value // 视频号默认同昵称
       };
 
-      if(!config.tg) { alert('请填写真实微信号/ID！'); return; }
+      // 验证必填项
+      if (!config.target) {
+        alert('请填写真实微信号/ID！');
+        return;
+      }
 
-      // 渲染假二维码界面
-      document.getElementById('d-avatar').style.backgroundImage = `url('${config.av}')`;
-      document.getElementById('d-name').textContent = config.nm;
-      document.getElementById('d-region').textContent = config.rg;
+      // 渲染设置端的假二维码界面
+      document.getElementById('display-avatar').style.backgroundImage = `url('${config.avatar}')`;
+      document.getElementById('display-name').textContent = config.name;
+      document.getElementById('display-region').textContent = config.region;
 
-      // URL安全编码
-      const jsonStr = JSON.stringify(config);
-      const base64Str = btoa(unescape(encodeURIComponent(jsonStr))); 
-      const baseUrl = window.location.href.split('?')[0];
-      const magicUrl = `${baseUrl}?data=${base64Str}`;
+      // 编码配置信息（URL安全）
+      const encodedData = btoa(unescape(encodeURIComponent(JSON.stringify(config))));
+      const magicUrl = `${window.location.origin}${window.location.pathname}?data=${encodedData}`;
 
-      // 生成高容错率二维码
-      document.getElementById('qrcode-box').innerHTML = '';
-      new QRCode(document.getElementById('qrcode-box'), {
+      // 生成二维码
+      document.getElementById('qrcode-container').innerHTML = '';
+      new QRCode(document.getElementById('qrcode-container'), {
         text: magicUrl,
         width: 280,
         height: 280,
-        colorDark: "#000",
-        colorLight: "#fff",
+        colorDark: '#000',
+        colorLight: '#fff',
         correctLevel: QRCode.CorrectLevel.H
       });
 
-      // 切换显示
+      // 切换到假二维码界面
       document.getElementById('layer-config').style.display = 'none';
       document.getElementById('layer-display').style.display = 'flex';
     }
 
-    // 观众端虚假界面初始化
-    function initMagicMode(encodedData) {
+    // 观众端：初始化假添加好友界面
+    function initMagicInterface(encodedData) {
       try {
-        const jsonStr = decodeURIComponent(escape(atob(encodedData)));
-        const config = JSON.parse(jsonStr);
+        // 解码配置信息
+        const config = JSON.parse(decodeURIComponent(escape(atob(encodedData))));
 
-        // 渲染匹配的黑色界面内容
-        document.getElementById('m-avatar').style.backgroundImage = `url('${config.av}')`;
-        document.getElementById('m-name').innerHTML = `${config.nm}<div class="verify-icon"></div>`;
-        document.getElementById('m-region').textContent = `地区: ${config.rg}`;
-        document.getElementById('m-sign').textContent = config.sg;
-        document.getElementById('m-videoid').textContent = config.vd;
-        document.title = "详细资料";
-        document.getElementById('layer-magic').style.display = 'flex';
+        // 渲染假界面内容（和设置的信息一致）
+        document.getElementById('magic-avatar').style.backgroundImage = `url('${config.avatar}')`;
+        document.getElementById('magic-name').innerHTML = `${config.name} <div class="verify-icon"></div>`;
+        document.getElementById('magic-region').textContent = `地区: ${config.region}`;
+        document.getElementById('magic-sign').textContent = config.sign;
+        document.getElementById('magic-videoid').textContent = config.videoid;
 
-        // 初始化红心交互
-        initHeartInteraction(config.tg);
+        // 显示假界面
+        document.getElementById('layer-magic').style.display = 'block';
+        document.title = '详细资料';
 
+        // 初始化红心交互逻辑
+        initHeartInteraction(config.target);
       } catch (e) {
-        alert('数据解析失败，请重新生成二维码');
+        alert('二维码无效，请重新生成！');
         console.error(e);
       }
     }
 
-    // 红心交互+跳转逻辑
+    // 观众端：红心交互+跳转真实界面
     function initHeartInteraction(targetWxId) {
       const heart = document.getElementById('magic-heart');
-      const loading = document.getElementById('loading');
+      const loading = document.getElementById('loading-mask');
       let isDragging = false;
+      const originStyle = { // 红心原始样式（用于复位）
+        position: heart.style.position,
+        right: heart.style.right,
+        top: heart.style.top,
+        width: '20px',
+        height: '20px',
+        fontSize: '20px'
+      };
 
-      // 点击变大
-      heart.addEventListener('click', (e) => {
-        e.stopPropagation();
-        let size = parseInt(window.getComputedStyle(heart).fontSize);
-        if(size < 100) {
+      // 点击红心放大
+      heart.addEventListener('click', function() {
+        let size = parseInt(window.getComputedStyle(this).fontSize);
+        if (size < 100) {
           size += 15;
-          heart.style.width = size + 'px';
-          heart.style.height = size + 'px';
-          heart.style.fontSize = size + 'px';
+          this.style.width = size + 'px';
+          this.style.height = size + 'px';
+          this.style.fontSize = size + 'px';
         }
       });
 
-      // 触摸开始
-      heart.addEventListener('touchstart', (e) => {
+      // 触摸开始：激活拖拽
+      heart.addEventListener('touchstart', function(e) {
         isDragging = true;
-        const rect = heart.getBoundingClientRect();
-        heart.style.position = 'fixed';
-        heart.style.left = rect.right + 'px';
-        heart.style.top = rect.top + 'px';
-        heart.style.margin = 0;
-      }, {passive: false});
+        const rect = this.getBoundingClientRect();
+        // 切换为fixed定位，方便全屏拖拽
+        this.style.position = 'fixed';
+        this.style.right = 'auto';
+        this.style.top = rect.top + 'px';
+        this.style.left = rect.left + 'px';
+      }, { passive: false });
 
-      // 触摸移动
-      heart.addEventListener('touchmove', (e) => {
-        if(!isDragging) return;
-        e.preventDefault();
+      // 触摸移动：跟随手指
+      heart.addEventListener('touchmove', function(e) {
+        if (!isDragging) return;
+        e.preventDefault(); // 阻止页面滚动
         const touch = e.touches[0];
-        heart.style.left = touch.clientX + 'px';
-        heart.style.top = touch.clientY + 'px';
-      }, {passive: false});
+        this.style.left = touch.clientX + 'px';
+        this.style.top = touch.clientY + 'px';
+      }, { passive: false });
 
-      // 触摸结束（拖出屏幕跳转）
-      heart.addEventListener('touchend', (e) => {
-        if(!isDragging) return;
+      // 触摸结束：判断是否拖出屏幕
+      heart.addEventListener('touchend', function() {
+        if (!isDragging) return;
         isDragging = false;
 
-        const rect = heart.getBoundingClientRect();
-        const winW = window.innerWidth;
-        const winH = window.innerHeight;
-        const isOutOfScreen = rect.left < 0 || rect.right > winW || rect.top < 0 || rect.bottom > winH;
-        
-        if(isOutOfScreen) {
-          heart.style.display = 'none';
-          loading.style.display = 'flex';
-          
-          setTimeout(() => {
-            // 微信原生添加好友协议
-            const addFriendUrl = `weixin://contacts/profile/${targetWxId}`;
-            const a = document.createElement('a');
-            a.href = addFriendUrl;
-            a.click();
+        const rect = this.getBoundingClientRect();
+        const winWidth = window.innerWidth;
+        const winHeight = window.innerHeight;
+        // 判断是否拖出屏幕边界
+        const isOutOfScreen = rect.left < 0 || rect.right > winWidth || rect.top < 0 || rect.bottom > winHeight;
 
-            setTimeout(() => loading.style.display = 'none', 2000);
+        if (isOutOfScreen) {
+          // 拖出屏幕：执行跳转
+          this.style.display = 'none';
+          loading.style.display = 'flex';
+
+          // 延迟跳转（模拟加载）
+          setTimeout(function() {
+            // 微信原生添加好友协议（无需VPN）
+            window.location.href = `weixin://contacts/profile/${targetWxId}`;
+            // 2秒后隐藏加载层
+            setTimeout(function() {
+              loading.style.display = 'none';
+            }, 2000);
           }, 600);
         } else {
-          // 复位到签名右侧
-          heart.style.transition = 'all 0.3s ease';
-          heart.style.position = 'absolute';
-          heart.style.right = '10px';
-          heart.style.top = '50%';
-          heart.style.transform = 'translateY(-50%)';
-          heart.style.width = '20px';
-          heart.style.height = '20px';
-          heart.style.fontSize = '20px';
-          setTimeout(() => heart.style.transition = '', 300);
+          // 未拖出屏幕：复位红心
+          this.style.transition = 'all 0.3s ease';
+          Object.assign(this.style, originStyle);
+          setTimeout(() => { this.style.transition = ''; }, 300);
         }
       });
     }

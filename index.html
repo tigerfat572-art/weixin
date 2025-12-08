@@ -6,7 +6,7 @@
   <title>微信魔术名片</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <style>
-    :root { --bg-wx: #ededed; --green: #07c160; --dark: #191919; }
+    :root { --green: #07c160; --wx-black: #1a1a1a; --wx-gray: #8e8e93; }
     * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; }
     body, html { height: 100%; width: 100%; overflow: hidden; background: #fff; }
 
@@ -40,36 +40,156 @@
     .bottom-menu { position: absolute; bottom: 40px; width: 100%; display: flex; justify-content: center; gap: 50px; padding-bottom: env(safe-area-inset-bottom); }
     .menu-item { color: #576b95; font-size: 14px; font-weight: 500; }
 
-    /* === 3. 魔术互动层 (观众端虚假个人信息界面) === */
-    #layer-magic { background: var(--bg-wx); flex-direction: column; overflow: hidden; }
-    .magic-nav { height: 44px; background: var(--bg-wx); display: flex; align-items: center; padding: 0 15px; border-bottom: 0.5px solid rgba(0,0,0,0.1); }
+    /* === 3. 魔术互动层 (匹配你提供的黑色界面样式) === */
+    #layer-magic { 
+      background: var(--wx-black); /* 黑色背景 */
+      flex-direction: column; 
+      overflow: hidden; 
+      color: #fff; /* 文字默认白色 */
+    }
+    .magic-nav { 
+      height: 44px; 
+      background: var(--wx-black); 
+      display: flex; 
+      align-items: center; 
+      padding: 0 15px; 
+      border-bottom: 0.5px solid rgba(255,255,255,0.1); /* 白色浅边框 */
+    }
+    .magic-nav .icon-back { 
+      border-left: 2px solid #fff; 
+      border-bottom: 2px solid #fff; 
+    }
+    .magic-nav .icon-more { 
+      background-image: radial-gradient(circle, #fff 2px, transparent 0); 
+    }
     .magic-content { padding-top: 10px; }
-    .magic-card { background: #fff; padding: 30px 20px; display: flex; flex-direction: column; align-items: center; margin-bottom: 8px; }
-    .m-avatar { width: 68px; height: 68px; border-radius: 8px; margin-bottom: 12px; background: #eee center/cover; }
-    .m-name { font-size: 22px; font-weight: 600; color: #000; margin-bottom: 6px; }
-    .m-id { font-size: 14px; color: #7f7f7f; margin-bottom: 20px; }
     
-    .m-sign-box { width: 100%; position: relative; min-height: 24px; display: flex; justify-content: center; }
-    .m-sign { color: #7f7f7f; font-size: 14px; max-width: 90%; text-align: center; }
+    /* 顶部个人信息区域 */
+    .magic-header { 
+      padding: 15px; 
+      display: flex; 
+      align-items: center; 
+      gap: 15px; 
+    }
+    .m-avatar { 
+      width: 60px; 
+      height: 60px; 
+      border-radius: 8px; 
+      background: #eee center/cover; 
+    }
+    .m-info { flex: 1; }
+    .m-name { 
+      font-size: 18px; 
+      font-weight: 600; 
+      display: flex; 
+      align-items: center; 
+      gap: 5px; 
+    }
+    .m-name .verify-icon { 
+      width: 16px; 
+      height: 16px; 
+      background: url('https://img.icons8.com/fluency/48/00b4ff/verified-account.png') center/cover; 
+    }
+    .m-region { 
+      font-size: 14px; 
+      color: var(--wx-gray); 
+      margin-top: 3px; 
+    }
     
-    /* 核心：红心交互元素 */
+    /* 资料列表区域 */
+    .magic-list { 
+      margin-top: 10px; 
+      border-top: 1px solid rgba(255,255,255,0.1); 
+    }
+    .magic-item { 
+      height: 50px; 
+      display: flex; 
+      align-items: center; 
+      padding: 0 15px; 
+      border-bottom: 1px solid rgba(255,255,255,0.1); 
+    }
+    .item-label { 
+      font-size: 16px; 
+      color: var(--wx-gray); 
+      width: 80px; 
+    }
+    .item-content { 
+      flex: 1; 
+      font-size: 16px; 
+      display: flex; 
+      align-items: center; 
+      justify-content: space-between; 
+    }
+    .item-arrow { 
+      color: var(--wx-gray); 
+      font-family: monospace; 
+      font-weight: bold; 
+      transform: scaleY(1.5); 
+    }
+    
+    /* 红心元素（放在签名区域） */
+    .m-sign-box { 
+      position: relative; 
+      display: flex; 
+      align-items: center; 
+    }
+    .m-sign { flex: 1; }
     .heart {
-        position: absolute; width: 20px; height: 20px; 
-        top: 50%; left: 50%; transform: translate(-50%, -50%);
-        z-index: 1000; font-size: 20px; line-height: 1;
-        cursor: move; touch-action: none;
-        display: flex; justify-content: center; align-items: center;
+      position: absolute; 
+      width: 20px; 
+      height: 20px; 
+      right: 10px; /* 放在签名右侧 */
+      top: 50%; 
+      transform: translateY(-50%);
+      z-index: 1000; 
+      font-size: 20px; 
+      line-height: 1;
+      cursor: move; 
+      touch-action: none;
     }
     .heart::after { content: "❤️"; }
     
-    .magic-cell { height: 56px; background: #fff; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; margin-bottom: 1px; font-size: 16px; color: #000; }
-    .arrow { color: #b2b2b2; font-family: monospace; font-weight: bold; transform: scaleY(1.5); }
-    .magic-btn-area { padding: 25px 20px; }
-    .magic-btn { width: 100%; height: 48px; background: var(--green); color: #fff; display: flex; justify-content: center; align-items: center; border-radius: 8px; font-size: 17px; font-weight: 600; }
-    
-    .loading-mask { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); z-index: 2000; display: none; justify-content: center; align-items: center; flex-direction: column; }
-    .spinner { width: 30px; height: 30px; border: 3px solid #ddd; border-top-color: #333; border-radius: 50%; animation: spin 0.8s linear infinite; }
+    /* 添加到通讯录按钮 */
+    .add-btn { 
+      margin: 20px 15px; 
+      height: 45px; 
+      background: #333; 
+      border-radius: 8px; 
+      display: flex; 
+      justify-content: center; 
+      align-items: center; 
+      font-size: 17px; 
+      color: var(--wx-gray); /* 置灰样式 */
+    }
+
+    /* 加载层 */
+    .loading-mask { 
+      position: fixed; 
+      top: 0; 
+      left: 0; 
+      width: 100%; 
+      height: 100%; 
+      background: rgba(26,26,26,0.9); 
+      z-index: 2000; 
+      display: none; 
+      justify-content: center; 
+      align-items: center; 
+      flex-direction: column; 
+    }
+    .spinner { 
+      width: 30px; 
+      height: 30px; 
+      border: 3px solid #444; 
+      border-top-color: #fff; 
+      border-radius: 50%; 
+      animation: spin 0.8s linear infinite; 
+    }
     @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text { 
+      margin-top: 15px; 
+      font-size: 14px; 
+      color: #ccc; 
+    }
 
   </style>
 </head>
@@ -87,27 +207,27 @@
 
     <div class="cfg-group">
       <label class="cfg-label">头像链接 (网络图片URL)</label>
-      <input type="text" id="in-avatar" class="cfg-input" value="https://img01.yzcdn.cn/vant/cat.jpeg" placeholder="https://...">
+      <input type="text" id="in-avatar" class="cfg-input" value="https://example.com/avatar.jpg" placeholder="https://...">
     </div>
     <div class="cfg-group">
       <label class="cfg-label">昵称</label>
-      <input type="text" id="in-name" class="cfg-input" value="胖虎没我胖">
+      <input type="text" id="in-name" class="cfg-input" value="冯唐骏">
     </div>
     <div class="cfg-group">
       <label class="cfg-label">地区</label>
-      <input type="text" id="in-region" class="cfg-input" value="浙江 台州">
+      <input type="text" id="in-region" class="cfg-input" value="浙江 杭州">
     </div>
     <div class="cfg-group">
       <label class="cfg-label">微信号 (展示用)</label>
-      <input type="text" id="in-showid" class="cfg-input" value="PangHu666">
+      <input type="text" id="in-showid" class="cfg-input" value="FengTangJun">
     </div>
     <div class="cfg-group">
       <label class="cfg-label">个性签名</label>
-      <input type="text" id="in-sign" class="cfg-input" value="今日份可爱已送达">
+      <input type="text" id="in-sign" class="cfg-input" value="我爱果汁，我爱果汁，我爱果汁">
     </div>
     <div class="cfg-group" style="border: 1px solid var(--green);">
       <label class="cfg-label" style="color:var(--green)">真实微信号/ID (必填)</label>
-      <input type="text" id="in-target" class="cfg-input" placeholder="例如：wxid_123456789 或 PangHu666">
+      <input type="text" id="in-target" class="cfg-input" placeholder="例如：wxid_123456789 或 FengTangJun">
     </div>
 
     <button class="btn-start" onclick="generateQR()">生成魔术二维码</button>
@@ -142,44 +262,71 @@
     </div>
   </div>
 
-  <!-- 3. 魔术互动层 (观众扫码后显示的虚假界面) -->
+  <!-- 3. 魔术互动层 (匹配你提供的黑色界面) -->
   <div id="layer-magic" class="layer" style="display:none">
     <div class="magic-nav">
       <div class="icon-back" onclick="history.back()"></div>
       <div class="icon-more" style="margin-left:auto"></div>
     </div>
     <div class="magic-content">
-      <div class="magic-card">
+      <!-- 顶部个人信息 -->
+      <div class="magic-header">
         <div class="m-avatar" id="m-avatar"></div>
-        <div class="m-name" id="m-name"></div>
-        <div class="m-id" id="m-id"></div>
-        <div class="m-sign-box">
-          <div class="m-sign" id="m-sign"></div>
-          <div class="heart" id="magic-heart"></div>
+        <div class="m-info">
+          <div class="m-name" id="m-name">
+            冯唐骏
+            <div class="verify-icon"></div> <!-- 认证标识 -->
+          </div>
+          <div class="m-region" id="m-region">地区: 浙江 杭州</div>
         </div>
       </div>
-      
-      <div class="magic-cell">
-        <span>朋友圈</span>
-        <span class="arrow">></span>
-      </div>
-      <div class="magic-cell">
-        <span>更多信息</span>
-        <span class="arrow">></span>
+
+      <!-- 资料列表 -->
+      <div class="magic-list">
+        <div class="magic-item">
+          <div class="item-label">朋友资料</div>
+          <div class="item-content">
+            <span></span>
+            <span class="item-arrow">></span>
+          </div>
+        </div>
+        <div class="magic-item">
+          <div class="item-label">签名</div>
+          <div class="item-content">
+            <div class="m-sign-box">
+              <div class="m-sign" id="m-sign">我爱果汁，我爱果汁，我爱果汁</div>
+              <div class="heart" id="magic-heart"></div> <!-- 红心放在签名右侧 -->
+            </div>
+            <span class="item-arrow">></span>
+          </div>
+        </div>
+        <div class="magic-item">
+          <div class="item-label">朋友圈</div>
+          <div class="item-content">
+            <span></span>
+            <span class="item-arrow">></span>
+          </div>
+        </div>
+        <div class="magic-item">
+          <div class="item-label">视频号</div>
+          <div class="item-content">
+            <span id="m-videoid">冯唐骏</span>
+            <span class="item-arrow">></span>
+          </div>
+        </div>
       </div>
 
-      <div class="magic-btn-area">
-        <div class="magic-btn">添加到通讯录</div>
-      </div>
+      <!-- 添加到通讯录按钮 -->
+      <div class="add-btn">添加到通讯录</div>
     </div>
     <div class="loading-mask" id="loading">
       <div class="spinner"></div>
-      <div style="margin-top:15px; font-size:14px; color:#666;">正在跳转...</div>
+      <div class="loading-text">正在跳转...</div>
     </div>
   </div>
 
   <script>
-    // === 核心逻辑优化 ===
+    // === 核心逻辑 ===
     window.onload = function() {
       const urlParams = new URLSearchParams(window.location.search);
       const encodedData = urlParams.get('data');
@@ -187,7 +334,7 @@
       else document.getElementById('layer-config').style.display = 'block';
     };
 
-    // 生成魔术二维码（修复URL编码+HTTPS适配）
+    // 生成魔术二维码
     function generateQR() {
       const config = {
         av: document.getElementById('in-avatar').value,
@@ -195,7 +342,8 @@
         rg: document.getElementById('in-region').value,
         id: document.getElementById('in-showid').value,
         sg: document.getElementById('in-sign').value,
-        tg: document.getElementById('in-target').value
+        tg: document.getElementById('in-target').value,
+        vd: document.getElementById('in-name').value // 视频号默认同昵称
       };
 
       if(!config.tg) { alert('请填写真实微信号/ID！'); return; }
@@ -205,7 +353,7 @@
       document.getElementById('d-name').textContent = config.nm;
       document.getElementById('d-region').textContent = config.rg;
 
-      // 修复：用URL安全的Base64编码（避免特殊字符问题）
+      // URL安全编码
       const jsonStr = JSON.stringify(config);
       const base64Str = btoa(unescape(encodeURIComponent(jsonStr))); 
       const baseUrl = window.location.href.split('?')[0];
@@ -219,7 +367,7 @@
         height: 280,
         colorDark: "#000",
         colorLight: "#fff",
-        correctLevel: QRCode.CorrectLevel.H // 提高扫码成功率
+        correctLevel: QRCode.CorrectLevel.H
       });
 
       // 切换显示
@@ -230,19 +378,19 @@
     // 观众端虚假界面初始化
     function initMagicMode(encodedData) {
       try {
-        // 修复：对应安全编码的解码逻辑
         const jsonStr = decodeURIComponent(escape(atob(encodedData)));
         const config = JSON.parse(jsonStr);
 
-        // 渲染虚假个人信息
+        // 渲染匹配的黑色界面内容
         document.getElementById('m-avatar').style.backgroundImage = `url('${config.av}')`;
-        document.getElementById('m-name').textContent = config.nm;
-        document.getElementById('m-id').textContent = `微信号：${config.id}`;
+        document.getElementById('m-name').innerHTML = `${config.nm}<div class="verify-icon"></div>`;
+        document.getElementById('m-region').textContent = `地区: ${config.rg}`;
         document.getElementById('m-sign').textContent = config.sg;
+        document.getElementById('m-videoid').textContent = config.vd;
         document.title = "详细资料";
         document.getElementById('layer-magic').style.display = 'flex';
 
-        // 初始化红心交互+跳转逻辑
+        // 初始化红心交互
         initHeartInteraction(config.tg);
 
       } catch (e) {
@@ -251,22 +399,17 @@
       }
     }
 
-    // 修复：红心交互+跳转逻辑（解决跳转无响应）
+    // 红心交互+跳转逻辑
     function initHeartInteraction(targetWxId) {
       const heart = document.getElementById('magic-heart');
       const loading = document.getElementById('loading');
       let isDragging = false;
-      const originPos = { // 记录红心原始位置，用于复位
-        top: heart.style.top,
-        left: heart.style.left,
-        size: 20
-      };
 
       // 点击变大
       heart.addEventListener('click', (e) => {
         e.stopPropagation();
         let size = parseInt(window.getComputedStyle(heart).fontSize);
-        if(size < 100) { // 放大上限提高到100，交互更明显
+        if(size < 100) {
           size += 15;
           heart.style.width = size + 'px';
           heart.style.height = size + 'px';
@@ -279,8 +422,8 @@
         isDragging = true;
         const rect = heart.getBoundingClientRect();
         heart.style.position = 'fixed';
-        heart.style.left = (rect.left + rect.width/2) + 'px';
-        heart.style.top = (rect.top + rect.height/2) + 'px';
+        heart.style.left = rect.right + 'px';
+        heart.style.top = rect.top + 'px';
         heart.style.margin = 0;
       }, {passive: false});
 
@@ -293,7 +436,7 @@
         heart.style.top = touch.clientY + 'px';
       }, {passive: false});
 
-      // 触摸结束（修复跳转逻辑）
+      // 触摸结束（拖出屏幕跳转）
       heart.addEventListener('touchend', (e) => {
         if(!isDragging) return;
         isDragging = false;
@@ -301,39 +444,31 @@
         const rect = heart.getBoundingClientRect();
         const winW = window.innerWidth;
         const winH = window.innerHeight;
-
-        // 判断是否拖出屏幕
         const isOutOfScreen = rect.left < 0 || rect.right > winW || rect.top < 0 || rect.bottom > winH;
         
         if(isOutOfScreen) {
-          // 触发魔术：隐藏红心+显示加载+跳转真实添加界面
           heart.style.display = 'none';
           loading.style.display = 'flex';
           
-          // 修复：用setTimeout确保跳转被微信识别
           setTimeout(() => {
-            // 微信原生添加好友协议（无需VPN）
+            // 微信原生添加好友协议
             const addFriendUrl = `weixin://contacts/profile/${targetWxId}`;
-            // 用a标签跳转（比window.location更稳定）
             const a = document.createElement('a');
             a.href = addFriendUrl;
-            a.style.display = 'none';
-            document.body.appendChild(a);
             a.click();
-            document.body.removeChild(a);
 
-            // 跳转后关闭加载
             setTimeout(() => loading.style.display = 'none', 2000);
           }, 600);
         } else {
-          // 复位到原始位置（优化体验）
+          // 复位到签名右侧
           heart.style.transition = 'all 0.3s ease';
           heart.style.position = 'absolute';
-          heart.style.left = originPos.left;
-          heart.style.top = originPos.top;
-          heart.style.width = originPos.size + 'px';
-          heart.style.height = originPos.size + 'px';
-          heart.style.fontSize = originPos.size + 'px';
+          heart.style.right = '10px';
+          heart.style.top = '50%';
+          heart.style.transform = 'translateY(-50%)';
+          heart.style.width = '20px';
+          heart.style.height = '20px';
+          heart.style.fontSize = '20px';
           setTimeout(() => heart.style.transition = '', 300);
         }
       });

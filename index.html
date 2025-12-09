@@ -9,11 +9,12 @@
     <title>详细资料</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
+        /* --- 基础重置 --- */
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
         body, html { width: 100%; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", Arial, sans-serif; background-color: #EDEDED; overflow: hidden; }
         .hidden { display: none !important; }
 
-        /* 1. 设置面板 */
+        /* --- 1. 设置面板 (魔术师端) --- */
         #setup-panel { padding: 20px; background: white; height: 100%; overflow-y: auto; z-index: 999; position: relative; }
         .setup-header { font-size: 20px; font-weight: bold; margin-bottom: 20px; text-align: center; padding-top: 40px; }
         .input-group { margin-bottom: 20px; }
@@ -22,18 +23,20 @@
         .btn-primary { width: 100%; padding: 15px; background-color: #07C160; color: white; border: none; border-radius: 8px; font-size: 17px; font-weight: 600; cursor: pointer; margin-top: 10px; }
         .hint { font-size: 12px; color: #999; margin-top: 6px; }
 
-        /* 2. 二维码展示 */
+        /* --- 2. 二维码展示 --- */
         #qr-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; background: #fff; z-index: 999; position: relative; }
         #qrcode { margin: 20px; border: 10px solid #fff; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
 
-        /* 3. 观众互动界面 */
+        /* --- 3. 观众互动界面 (仿微信) --- */
         #audience-view { background-color: #fff; height: 100%; display: flex; flex-direction: column; position: relative; }
         
+        /* 伪装导航栏 */
         .fake-nav-bar { height: 44px; display: flex; align-items: center; justify-content: space-between; padding: 0 12px; background-color: #fff; position: relative; z-index: 50; }
         .nav-left, .nav-right { width: 40px; display: flex; align-items: center; }
         .nav-back-icon { width: 12px; height: 20px; background: url("data:image/svg+xml,%3Csvg width='12' height='20' viewBox='0 0 12 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M10.5 1L1.5 10L10.5 19' stroke='black' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat center/contain; }
         .nav-dots-icon { width: 24px; height: 24px; background: url("data:image/svg+xml,%3Csvg width='24' height='24' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='4' cy='12' r='2' fill='black'/%3E%3Ccircle cx='12' cy='12' r='2' fill='black'/%3E%3Ccircle cx='20' cy='12' r='2' fill='black'/%3E%3C/svg%3E") no-repeat center/contain; margin-left: auto; }
 
+        /* 资料头部 */
         .profile-header { padding: 10px 25px 35px; display: flex; align-items: flex-start; background: #fff; }
         .avatar { width: 64px; height: 64px; border-radius: 6px; margin-right: 20px; background: #eee; object-fit: cover; }
         .info-col { flex: 1; padding-top: 2px; }
@@ -42,6 +45,7 @@
         .gender-icon { width: 16px; height: 16px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='none' d='M0 0h24v24H0z'/%3E%3Cpath d='M12 2a10 10 0 1 1-10 10A10 10 0 0 1 12 2zm0 2a8 8 0 1 0 8 8A8 8 0 0 0 12 4zm0 3a5 5 0 1 1-5 5A5 5 0 0 1 12 7zm0 2a3 3 0 1 0 3 3A3 3 0 0 0 12 9z' fill='%231677FF'/%3E%3C/svg%3E"); background-size: contain; background-repeat: no-repeat; }
         .region { font-size: 14px; color: #7f7f7f; }
 
+        /* 列表部分 */
         .gap { height: 10px; background-color: #ededed; }
         .cell-group { background: #fff; padding-left: 25px; }
         .cell { display: flex; justify-content: space-between; align-items: center; padding: 18px 25px 18px 0; border-bottom: 1px solid #f0f0f0; position: relative; }
@@ -50,44 +54,57 @@
         .content { flex: 1; text-align: left; font-size: 16px; color: #111; display: flex; align-items: center; }
         .arrow { width: 8px; height: 14px; background: url("data:image/svg+xml,%3Csvg width='8' height='13' viewBox='0 0 8 13' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1.06.94a.75.75 0 0 1 1.06 0l5.5 5.5a.75.75 0 0 1 0 1.06l-5.5 5.5a.75.75 0 1 1-1.06-1.06L5.94 7 1.06 2a.75.75 0 0 1 0-1.06z' fill='%23C7C7CC' fill-rule='evenodd'/%3E%3C/svg%3E") no-repeat center/contain; margin-left: auto; }
 
+        /* 底部 */
         .bottom-area { background: #ededed; flex: 1; padding-top: 20px; display: flex; justify-content: center; align-items: flex-start; }
         .action-btn { background: #fff; color: #576b95; font-size: 17px; font-weight: 600; width: 100%; padding: 14px 0; text-align: center; border-top: 1px solid #e5e5e5; border-bottom: 1px solid #e5e5e5; }
         .action-btn:active { background-color: #f2f2f2; }
 
-        /* 魔术区域 */
+        /* --- 魔术核心：红心 --- */
         #magic-trigger-area { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; }
-        #magic-heart { position: absolute; right: 20px; top: 50%; transform: translateY(-50%) scale(1); font-size: 32px; opacity: 0; pointer-events: none; transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275); user-select: none; }
+        #magic-heart { 
+            position: absolute; right: 20px; top: 50%; transform: translateY(-50%) scale(1); 
+            font-size: 32px; opacity: 0; pointer-events: none; 
+            transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+            user-select: none; -webkit-user-select: none;
+        }
         #magic-heart.visible { opacity: 1 !important; pointer-events: auto; }
         
-        /* 这里的a标签用于强制点击 */
-        #hidden-link { display: none; }
+        /* 辅助输入框，用于实现自动复制 */
+        #copy-input { position: absolute; left: -9999px; top: -9999px; opacity: 0; }
     </style>
 </head>
 <body>
+
     <div id="setup-panel">
-        <div class="setup-header">魔术设置</div>
+        <div class="setup-header">魔术设置 (H5模式)</div>
+        
         <div class="input-group">
             <label>假的昵称</label>
             <input type="text" id="fakeName" placeholder="例如：Alex">
         </div>
+
         <div class="input-group">
             <label>头像链接</label>
-            <input type="text" id="fakeAvatar" placeholder="粘贴头像 URL">
+            <input type="text" id="fakeAvatar" placeholder="粘贴图片链接，不填则随机">
         </div>
+
         <div class="input-group">
             <label>假的地区</label>
-            <input type="text" id="fakeRegion" placeholder="例如：浙江 杭州">
+            <input type="text" id="fakeRegion" placeholder="例如：上海 浦东">
         </div>
+
         <div class="input-group" style="border: 2px dashed #07C160; padding: 10px; background: #f0fdf4;">
-            <label style="color: #07C160;">★ 真实的跳转链接 (最重要)</label>
-            <input type="text" id="realUrl" placeholder="http://weixin.qq.com/r/...">
-            <div class="hint">请确保使用【二维码解码】后的长链接，不要缩短</div>
+            <label style="color: #07C160;">★ 你的微信号 (用于复制)</label>
+            <input type="text" id="wechatId" placeholder="例如：wxid_1234567">
+            <div class="hint">观众拖走红心后，会打开微信，你可以让他直接“粘贴”搜索</div>
         </div>
-        <button class="btn-primary" onclick="generateMagic()">确认并生成</button>
+        
+        <button class="btn-primary" onclick="generateMagic()">生成二维码</button>
+        <p style="text-align:center; margin-top:20px; color:#aaa; font-size:12px;">建议在 Safari 添加到主屏幕后使用</p>
     </div>
 
     <div id="qr-screen" class="hidden">
-        <h3 style="margin-bottom: 20px;">观众扫码页</h3>
+        <h3 style="margin-bottom: 20px;">请观众扫码</h3>
         <div id="qrcode"></div>
         <button onclick="location.reload()" style="margin-top: 40px; border: none; background: none; color: #999;">重新设置</button>
     </div>
@@ -98,6 +115,7 @@
             <div class="nav-left"><div class="nav-back-icon"></div></div>
             <div class="nav-right"><div class="nav-dots-icon"></div></div>
         </div>
+
         <div class="profile-header">
             <img id="view-avatar" src="" class="avatar">
             <div class="info-col">
@@ -108,7 +126,9 @@
                 <div id="view-region" class="region"></div>
             </div>
         </div>
+
         <div class="gap"></div>
+
         <div class="cell-group">
             <div class="cell">
                 <div class="label">朋友资料</div>
@@ -117,6 +137,7 @@
                 <div id="magic-trigger-area"><div id="magic-heart">❤️</div></div>
             </div>
         </div>
+
         <div class="gap"></div>
         <div class="cell-group">
             <div class="cell">
@@ -124,27 +145,31 @@
                 <div class="content" style="color: #7f7f7f;">来自扫一扫</div>
             </div>
         </div>
+        
         <div class="bottom-area">
             <div class="action-btn">添加到通讯录</div>
         </div>
     </div>
-    
-    <a id="hidden-link" href="#" rel="nofollow"></a>
+
+    <input type="text" id="copy-input">
 
     <script>
         const params = new URLSearchParams(window.location.search);
         const mode = params.get('mode');
+        
         const setupPanel = document.getElementById('setup-panel');
         const qrScreen = document.getElementById('qr-screen');
         const audienceView = document.getElementById('audience-view');
+        
         const heart = document.getElementById('magic-heart');
         const triggerArea = document.getElementById('magic-trigger-area');
-        const hiddenLink = document.getElementById('hidden-link');
+        const copyInput = document.getElementById('copy-input');
 
         let heartScale = 1;
         let isHeartVisible = false;
-        let realDestUrl = "";
+        let targetWxId = ""; // 目标微信号
 
+        // 判断模式
         if (mode === 'audience') {
             setupPanel.classList.add('hidden');
             qrScreen.classList.add('hidden');
@@ -156,12 +181,13 @@
             const name = document.getElementById('fakeName').value || "未设置";
             const avatar = document.getElementById('fakeAvatar').value || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&color=fff`;
             const region = document.getElementById('fakeRegion').value || "";
-            const url = document.getElementById('realUrl').value;
+            const wxId = document.getElementById('wechatId').value;
 
-            if (!url) { alert("请填写跳转链接！"); return; }
+            if (!wxId) { alert("请填写微信号！"); return; }
 
+            // 编码 URL，将微信号传给观众端
             const baseUrl = window.location.origin + window.location.pathname;
-            const fullUrl = `${baseUrl}?mode=audience&n=${encodeURIComponent(name)}&a=${encodeURIComponent(avatar)}&r=${encodeURIComponent(region)}&u=${encodeURIComponent(url)}`;
+            const fullUrl = `${baseUrl}?mode=audience&n=${encodeURIComponent(name)}&a=${encodeURIComponent(avatar)}&r=${encodeURIComponent(region)}&id=${encodeURIComponent(wxId)}`;
 
             setupPanel.classList.add('hidden');
             qrScreen.classList.remove('hidden');
@@ -170,17 +196,16 @@
         }
 
         function initAudience() {
+            // 填充UI
             document.getElementById('view-name').innerText = params.get('n');
             document.getElementById('view-avatar').src = params.get('a');
             const r = params.get('r');
             document.getElementById('view-region').innerText = r ? "地区：" + r : "";
-            realDestUrl = params.get('u');
+            
+            // 获取微信号
+            targetWxId = params.get('id');
 
-            // 预设隐藏链接的href，方便后面模拟点击
-            if (realDestUrl) {
-                hiddenLink.href = realDestUrl;
-            }
-
+            // 绑定事件
             triggerArea.addEventListener('touchstart', handleTouchStart, {passive: false});
             triggerArea.addEventListener('touchmove', handleTouchMove, {passive: false});
             triggerArea.addEventListener('touchend', handleTouchEnd, {passive: false});
@@ -201,8 +226,6 @@
             if(e.cancelable) e.preventDefault();
             if (!isHeartVisible) return;
             const touch = e.touches[0];
-            
-            // 计算位移
             const dx = touch.clientX - startX;
             const dy = touch.clientY - startY;
 
@@ -212,29 +235,27 @@
                 heart.style.zIndex = '9999';
                 heart.style.left = touch.clientX + 'px';
                 heart.style.top = touch.clientY + 'px';
-                heart.style.margin = 0;
-                heart.style.right = 'auto';
+                heart.style.margin = 0; heart.style.right = 'auto';
                 heart.style.transform = `translate(-50%, -50%) scale(${heartScale})`;
             }
         }
 
         function handleTouchEnd(e) {
             if (!isDragging) {
-                // --- 点击逻辑 ---
+                // 点击逻辑
                 if (!isHeartVisible) {
                     isHeartVisible = true;
                     heart.classList.add('visible');
-                    // 弹跳动画
                     heart.style.transform = `translateY(-50%) scale(1.2)`;
                     setTimeout(() => heart.style.transform = `translateY(-50%) scale(1)`, 150);
                 } else {
                     heartScale += 0.8;
                     if (heartScale > 6) heartScale = 6;
-                    const transformBase = heart.style.position === 'fixed' ? 'translate(-50%, -50%)' : 'translateY(-50%)';
-                    heart.style.transform = `${transformBase} scale(${heartScale})`;
+                    const base = heart.style.position === 'fixed' ? 'translate(-50%, -50%)' : 'translateY(-50%)';
+                    heart.style.transform = `${base} scale(${heartScale})`;
                 }
             } else {
-                // --- 拖拽结束逻辑 ---
+                // 拖拽结束逻辑
                 const touch = e.changedTouches[0];
                 checkExit(touch.clientX, touch.clientY);
             }
@@ -246,18 +267,24 @@
             const edge = 30;
 
             if (x < edge || x > w - edge || y < edge || y > h - edge) {
-                // 1. 立即消失
+                // 1. 立即隐藏红心
                 heart.style.display = 'none';
 
-                // 2. 核心修正：不使用 setTimeout，直接触发点击或跳转
-                // 这能最大程度保留“用户手势”，告诉Safari这是用户想打开APP
-                if (realDestUrl) {
-                    // 尝试模拟点击a标签（比window.location更稳）
-                    hiddenLink.click();
-                    
-                    // 双重保险：如果click没反应，尝试replace
-                    // (这行代码会在微小的延迟后执行，作为备用)
-                    // window.location.replace(realDestUrl);
+                // 2. 核心操作：复制微信号 + 唤起微信
+                if (targetWxId) {
+                    // 复制操作 (兼容性写法)
+                    copyInput.value = targetWxId;
+                    copyInput.select();
+                    copyInput.setSelectionRange(0, 99999); // 兼容手机
+                    try {
+                        document.execCommand('copy'); 
+                    } catch (err) {
+                        console.log('复制失败');
+                    }
+
+                    // 唤起微信 (使用 H5 Scheme)
+                    // 这行代码会直接让手机询问“在微信中打开链接吗？”然后跳过去
+                    window.location.href = "weixin://";
                 }
             }
         }

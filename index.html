@@ -215,25 +215,23 @@
         </div>
     </div>
 
-    <script>
-        // === 核心逻辑 ===
+<script>
+        // === 1. 初始化参数 ===
         const params = new URLSearchParams(window.location.search);
         const mode = params.get('mode');
 
         const setupPanel = document.getElementById('setup-panel');
         const qrScreen = document.getElementById('qr-screen');
         const audienceView = document.getElementById('audience-view');
-        
-        // 魔术元素
-        const triggerArea = document.getElementById('magic-trigger-area');
         const heart = document.getElementById('magic-heart');
+        const triggerArea = document.getElementById('magic-trigger-area');
 
         // 状态变量
         let heartScale = 1;
         let isHeartVisible = false;
         let realDestUrl = "";
 
-        // 1. 判断模式
+        // === 2. 模式判断 ===
         if (mode === 'audience') {
             setupPanel.classList.add('hidden');
             qrScreen.classList.add('hidden');
@@ -241,49 +239,45 @@
             initAudience();
         }
 
-        // 2. 魔术师生成逻辑
+        // === 3. 魔术师设置逻辑 ===
         function generateMagic() {
             const name = document.getElementById('fakeName').value || "未设置昵称";
-            // 默认头像
-            const defaultAvatar = "https://ui-avatars.com/api/?name=" + encodeURIComponent(name) + "&background=random";
-            const avatar = document.getElementById('fakeAvatar').value || defaultAvatar;
+            const avatarInput = document.getElementById('fakeAvatar').value;
+            // 如果没填头像，生成一个随机的文字头像
+            const avatar = avatarInput || "https://ui-avatars.com/api/?name=" + encodeURIComponent(name) + "&background=random&color=fff&size=128";
             const region = document.getElementById('fakeRegion').value || "";
-            const url = document.getElementById('realUrl').value;
+            let url = document.getElementById('realUrl').value;
 
-            if (!url) {
-                alert("必须填写真实的跳转链接！");
-                return;
-            }
+            if (!url) { alert("严重警告：你没填跳转链接！"); return; }
 
-            // 构建链接
+            // 清理一下链接前后的空格
+            url = url.trim();
+
             const baseUrl = window.location.origin + window.location.pathname;
             const fullUrl = `${baseUrl}?mode=audience&n=${encodeURIComponent(name)}&a=${encodeURIComponent(avatar)}&r=${encodeURIComponent(region)}&u=${encodeURIComponent(url)}`;
 
             setupPanel.classList.add('hidden');
             qrScreen.classList.remove('hidden');
             
-            // 生成二维码
             document.getElementById("qrcode").innerHTML = "";
-            new QRCode(document.getElementById("qrcode"), {
-                text: fullUrl,
-                width: 250,
-                height: 250
+            new QRCode(document.getElementById("qrcode"), { 
+                text: fullUrl, 
+                width: 250, 
+                height: 250,
+                correctLevel : QRCode.CorrectLevel.L // 降低容错率让码看起来稀疏一点，更好扫
             });
         }
 
-        // 3. 观众端逻辑
+        // === 4. 观众端逻辑 ===
         function initAudience() {
-            // 填充数据
             document.getElementById('view-name').innerText = params.get('n');
             document.getElementById('view-avatar').src = params.get('a');
-            
             const r = params.get('r');
             document.getElementById('view-region').innerText = r ? "地区：" + r : "";
             
             realDestUrl = params.get('u');
 
-            // 绑定事件
-            // 我们把事件绑在 triggerArea (整个格子) 上，方便点击
+            // 绑定触摸事件
             triggerArea.addEventListener('touchstart', handleTouchStart, {passive: false});
             triggerArea.addEventListener('touchmove', handleTouchMove, {passive: false});
             triggerArea.addEventListener('touchend', handleTouchEnd, {passive: false});
@@ -293,7 +287,7 @@
         let isDragging = false;
 
         function handleTouchStart(e) {
-            if(e.cancelable) e.preventDefault(); // 阻止滚动
+            if(e.cancelable) e.preventDefault();
             const touch = e.touches[0];
             startX = touch.clientX;
             startY = touch.clientY;
@@ -302,51 +296,46 @@
 
         function handleTouchMove(e) {
             if(e.cancelable) e.preventDefault();
-            
-            if (!isHeartVisible) return; // 没显形前不能拖
+            if (!isHeartVisible) return;
 
             const touch = e.touches[0];
             const dx = touch.clientX - startX;
             const dy = touch.clientY - startY;
 
-            // 如果移动超过 5px，算拖拽
-            if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+            // 稍微动一点就算拖拽，保证灵敏度
+            if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
                 isDragging = true;
                 
-                // 拖拽跟随
                 heart.style.position = 'fixed';
                 heart.style.zIndex = '9999';
                 heart.style.left = touch.clientX + 'px';
                 heart.style.top = touch.clientY + 'px';
                 heart.style.margin = 0;
-                heart.style.right = 'auto'; // 清除原来的定位
+                heart.style.right = 'auto';
                 heart.style.transform = `translate(-50%, -50%) scale(${heartScale})`;
             }
         }
 
         function handleTouchEnd(e) {
             if (!isDragging) {
-                // === 点击逻辑 ===
+                // ---> 点击逻辑
                 if (!isHeartVisible) {
-                    // 第一次点击：显形
+                    // 第一次点：显形
                     isHeartVisible = true;
                     heart.classList.add('visible');
-                    // 稍微给个弹跳动画
-                    heart.style.transform = `translateY(-50%) scale(1.2)`;
+                    // 弹跳一下
+                    heart.style.transform = `translateY(-50%) scale(1.3)`;
                     setTimeout(() => heart.style.transform = `translateY(-50%) scale(1)`, 150);
                 } else {
-                    // 后续点击：变大
+                    // 后续点：变大
                     heartScale += 0.8;
-                    if (heartScale > 6) heartScale = 6;
+                    if (heartScale > 7) heartScale = 7; // 最大倍数
                     
-                    if (heart.style.position === 'fixed') {
-                        heart.style.transform = `translate(-50%, -50%) scale(${heartScale})`;
-                    } else {
-                        heart.style.transform = `translateY(-50%) scale(${heartScale})`;
-                    }
+                    const transformBase = heart.style.position === 'fixed' ? 'translate(-50%, -50%)' : 'translateY(-50%)';
+                    heart.style.transform = `${transformBase} scale(${heartScale})`;
                 }
             } else {
-                // === 拖拽结束逻辑 ===
+                // ---> 拖拽结束逻辑
                 const touch = e.changedTouches[0];
                 checkExit(touch.clientX, touch.clientY);
             }
@@ -355,15 +344,45 @@
         function checkExit(x, y) {
             const w = window.innerWidth;
             const h = window.innerHeight;
-            const edge = 30; // 边缘阈值
+            const edge = 20; // 边缘敏感度
 
+            // 如果触点在屏幕边缘
             if (x < edge || x > w - edge || y < edge || y > h - edge) {
-                // 移出屏幕 -> 触发跳转
-                heart.style.opacity = 0;
-                setTimeout(() => {
-                    if (realDestUrl) window.location.href = realDestUrl;
-                }, 300);
+                
+                // 1. 爱心立刻消失
+                heart.style.display = 'none'; 
+
+                // 2. 强力跳转逻辑
+                if (realDestUrl) {
+                    // 只有100毫秒延迟，尽可能保留“用户触摸”的权限
+                    setTimeout(() => {
+                        forceJump(realDestUrl);
+                    }, 100);
+                }
             }
+        }
+
+        // ★★★ 核心修复：强力跳转函数 ★★★
+        function forceJump(url) {
+            // 方法A：如果链接里没有时间戳，加一个防止缓存
+            if (url.indexOf('?') === -1) {
+                url += '?t=' + new Date().getTime();
+            }
+
+            // 方法B：创建一个看不见的 A 标签并模拟点击
+            // 这是 iOS 上唤起 App 最稳妥的黑科技
+            const a = document.createElement('a');
+            a.setAttribute('href', url);
+            a.style.display = 'none';
+            document.body.appendChild(a);
+            
+            // 触发点击
+            a.click();
+            
+            // 如果 A 标签没反应，作为备选方案执行 replace
+            setTimeout(() => {
+                window.location.replace(url);
+            }, 200);
         }
     </script>
 </body>

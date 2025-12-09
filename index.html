@@ -56,25 +56,29 @@
         .action-btn { background: #fff; color: #576b95; font-size: 17px; font-weight: 700; width: 100%; padding: 16px 0; text-align: center; border-top: 0.5px solid #e5e5e5; border-bottom: 0.5px solid #e5e5e5; }
 
         /* --- 4. 魔术特有元素 (红心) --- */
-        #magic-trigger-area { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 500; }
+        /* 触摸层：初始隐藏，红心出现后变全屏 */
+        #magic-trigger-area { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            z-index: 500; display: none; 
+        }
         
         #magic-heart { 
-            position: absolute; right: 24px; top: 50%; transform: translateY(-50%) scale(0); /* 初始比例0 */
+            position: absolute; /* 初始在格子里，后续会被JS控制 */
             font-size: 32px; color: #fa5151; 
             opacity: 0; /* 初始看不见 */
-            transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* 弹性动画 */
+            transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
             z-index: 1000;
-            pointer-events: none; /* 让触摸层接管 */
+            pointer-events: none; 
         }
-        /* 显形样式 */
-        #magic-heart.appeared { opacity: 1; transform: translateY(-50%) scale(1); }
+        
+        #magic-heart.appeared { opacity: 1; }
 
         /* --- 5. 隐形真实二维码 (结局层) --- */
         #hidden-real-qrcode {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 9999; 
-            display: none; /* 初始隐藏 */
-            opacity: 0.01; /* 几乎透明，但可长按 */
+            display: none; 
+            opacity: 0.01; 
             align-items: center; justify-content: center;
             background: white; 
         }
@@ -87,7 +91,7 @@
 <body>
 
     <div id="setup-panel">
-        <div class="setup-title">魔术设置 (优化版)</div>
+        <div class="setup-title">魔术设置 (全屏修复版)</div>
         
         <div class="input-group">
             <label>1. 假的昵称</label>
@@ -112,7 +116,7 @@
     <div id="qr-screen" class="hidden">
         <h3 style="margin-top:60px; margin-bottom:20px; color:#333;">观众扫码页</h3>
         <div id="qrcode"></div>
-        <p style="text-align:center; color:#999; margin-top:20px; font-size:13px;">流程：点资料出心 -> 点心变大 -> 拖走 -> 长按显形</p>
+        <p style="text-align:center; color:#999; margin-top:20px; font-size:13px;">流程：点资料出心 -> 点心变大 -> 拖到哪都能点 -> 长按显形</p>
         <button onclick="location.reload()" style="margin-top:40px; border:none; background:none; color:#999;">重新设置</button>
     </div>
 
@@ -142,9 +146,7 @@
                 <div class="content"></div>
                 <div class="arrow"></div>
                 
-                <div id="magic-trigger-area">
-                    <div id="magic-heart">❤️</div>
-                </div>
+                <div id="magic-heart">❤️</div>
             </div>
         </div>
 
@@ -160,6 +162,8 @@
         <div class="bottom-area">
             <div class="action-btn">添加到通讯录</div>
         </div>
+
+        <div id="magic-trigger-area"></div>
 
         <div id="hidden-real-qrcode"></div>
     </div>
@@ -178,7 +182,7 @@
         const triggerArea = document.getElementById('magic-trigger-area');
         const hiddenQrLayer = document.getElementById('hidden-real-qrcode');
 
-        // --- 1. 获取参数 (观众模式) ---
+        // --- 1. 获取参数 ---
         const params = new URLSearchParams(window.location.search);
         if (params.get('mode') === 'show') {
             setupPanel.classList.add('hidden');
@@ -200,7 +204,7 @@
             initInteractions();
         }
 
-        // --- 2. 生成 (魔术师模式) ---
+        // --- 2. 生成 ---
         function generateMagic() {
             const fn = document.getElementById('fakeName').value || "Unknown";
             const fa = document.getElementById('fakeAvatar').value || `https://ui-avatars.com/api/?name=${encodeURIComponent(fn)}&background=random&color=fff`;
@@ -220,43 +224,63 @@
             });
         }
 
-        // --- 3. 核心交互逻辑 (修复点击变大) ---
-        let heartState = 0; // 0:隐藏, 1:显示, 2:拖动
+        // --- 3. 核心交互逻辑 (完全重写) ---
+        let heartState = 0; // 0:隐藏, 1:显示
         let heartScale = 1; 
         let startX, startY;
-        let isDragging = false; // 是否正在被拖动
+        let isDragging = false; 
+        
+        // 记录红心当前的绝对坐标 (用于脱离文档流后定位)
+        let currentX = 0; 
+        let currentY = 0;
 
         function initInteractions() {
-            // 事件1：点击“朋友资料”整行 -> 召唤红心
-            // 我们给整行加个单独的点击事件，只负责“召唤”
-            // 注意：要确保 triggerArea 没有拦截这个点击
+            // A. 召唤红心
             profileRow.addEventListener('click', (e) => {
-                // 如果是直接点到了触摸层，事件会冒泡上来，这里判断一下状态
                 if (heartState === 0) {
                     heartState = 1;
+                    
+                    // 1. 获取红心当前在格子里面的位置
+                    const rect = heart.getBoundingClientRect();
+                    currentX = rect.left + rect.width / 2;
+                    currentY = rect.top + rect.height / 2;
+
+                    // 2. 激活红心显形
                     heart.classList.add('appeared');
-                    // 可选：安卓震动
+                    // 初始位置居中微调（因为CSS是 translate -50%）
+                    // 此时红心还在 cell 里，CSS 控制位置
+
+                    // 3. 开启全屏触摸层，接管所有操作
+                    triggerArea.style.display = 'block';
+
+                    // 4. 将红心立刻改为 fixed 定位，使其脱离文档流，防止被遮挡或位置限制
+                    // 这一步非常关键：我们立刻把它从“格子里”拿出来，放到“屏幕上”
+                    heart.style.position = 'fixed';
+                    heart.style.left = currentX + 'px';
+                    heart.style.top = currentY + 'px';
+                    heart.style.margin = '0';
+                    heart.style.right = 'auto';
+                    heart.style.zIndex = '1000';
+                    heart.style.transform = `translate(-50%, -50%) scale(1)`;
+
                     if(navigator.vibrate) navigator.vibrate(50);
                 }
             });
 
-            // 事件2：触摸层接管所有对红心的操作 (点击变大 + 拖拽)
+            // B. 全屏触摸层逻辑
             triggerArea.addEventListener('touchstart', onTouchStart, {passive: false});
             triggerArea.addEventListener('touchmove', onTouchMove, {passive: false});
             triggerArea.addEventListener('touchend', onTouchEnd, {passive: false});
         }
 
         function onTouchStart(e) {
-            // 如果红心还没出来，不许操作触摸层
             if (heartState === 0) return;
-            
-            // 阻止默认，防止页面滚动
             if(e.cancelable) e.preventDefault();
 
             const touch = e.touches[0];
             startX = touch.clientX;
             startY = touch.clientY;
-            isDragging = false; // 重置拖拽标记
+            isDragging = false;
         }
 
         function onTouchMove(e) {
@@ -267,19 +291,17 @@
             const dx = touch.clientX - startX;
             const dy = touch.clientY - startY;
 
-            // 核心修复：只有移动超过 10px 才算拖拽
+            // 移动超过 10px 才算拖拽
             if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
-                isDragging = true; // 标记为正在拖拽
-                heartState = 2; // 进入拖拽状态
-
-                heart.style.position = 'fixed';
-                heart.style.zIndex = '9999';
-                heart.style.left = touch.clientX + 'px';
-                heart.style.top = touch.clientY + 'px';
-                heart.style.margin = 0; 
-                heart.style.right = 'auto';
+                isDragging = true;
                 
-                // 拖拽时保持当前大小
+                // 更新坐标
+                currentX = touch.clientX;
+                currentY = touch.clientY;
+
+                // 应用位置
+                heart.style.left = currentX + 'px';
+                heart.style.top = currentY + 'px';
                 heart.style.transform = `translate(-50%, -50%) scale(${heartScale})`;
             }
         }
@@ -287,23 +309,16 @@
         function onTouchEnd(e) {
             if (heartState === 0) return;
 
-            // 如果 【没有发生拖拽】 = 【那就是点击】
+            // === 是点击 ===
             if (!isDragging) {
-                // 执行变大逻辑
                 heartScale += 0.5;
                 if (heartScale > 5) heartScale = 5;
                 
-                // 这里的 transform 逻辑取决于当前是 static 还是 fixed
-                // 但为了简单，如果还没拖过，它应该还是 absolute 居中
-                // 我们直接用 transform 来缩放
-                if (heart.style.position === 'fixed') {
-                     heart.style.transform = `translate(-50%, -50%) scale(${heartScale})`;
-                } else {
-                     heart.style.transform = `translateY(-50%) scale(${heartScale})`;
-                }
+                // 在当前位置变大
+                heart.style.transform = `translate(-50%, -50%) scale(${heartScale})`;
             } 
+            // === 是拖拽结束 ===
             else {
-                // 如果是 【拖拽结束】
                 const touch = e.changedTouches[0];
                 checkExit(touch.clientX, touch.clientY);
             }
@@ -314,13 +329,12 @@
             const h = window.innerHeight;
             const edge = 30; 
 
+            // 判断是否移出屏幕
             if (x < edge || x > w - edge || y < edge || y > h - edge) {
-                // === 结局触发 ===
+                // 结局
                 heart.style.display = 'none';
-                triggerArea.style.display = 'none';
-
-                // 显形隐形二维码
-                hiddenQrLayer.style.display = 'flex';
+                triggerArea.style.display = 'none'; // 关闭触摸层
+                hiddenQrLayer.style.display = 'flex'; // 开启隐形码
             }
         }
     </script>

@@ -6,17 +6,14 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="format-detection" content="telephone=no">
-    
     <title>详细资料</title>
-    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
         body, html { width: 100%; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", Arial, sans-serif; background-color: #EDEDED; overflow: hidden; }
         .hidden { display: none !important; }
 
-        /* --- 1. 设置面板 (魔术师端) --- */
+        /* 1. 设置面板 */
         #setup-panel { padding: 20px; background: white; height: 100%; overflow-y: auto; z-index: 999; position: relative; }
         .setup-header { font-size: 20px; font-weight: bold; margin-bottom: 20px; text-align: center; padding-top: 40px; }
         .input-group { margin-bottom: 20px; }
@@ -25,158 +22,82 @@
         .btn-primary { width: 100%; padding: 15px; background-color: #07C160; color: white; border: none; border-radius: 8px; font-size: 17px; font-weight: 600; cursor: pointer; margin-top: 10px; }
         .hint { font-size: 12px; color: #999; margin-top: 6px; }
 
-        /* --- 2. 二维码展示 (魔术师端) --- */
+        /* 2. 二维码展示 */
         #qr-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; background: #fff; z-index: 999; position: relative; }
         #qrcode { margin: 20px; border: 10px solid #fff; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
 
-        /* --- 3. 观众互动界面 (高仿微信) --- */
+        /* 3. 观众互动界面 */
         #audience-view { background-color: #fff; height: 100%; display: flex; flex-direction: column; position: relative; }
         
-        /* 伪装的顶部导航栏 (让网页看起来像App内部) */
-        .fake-nav-bar {
-            height: 44px; /* iOS标准导航高度 */
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 12px;
-            background-color: #fff;
-            position: relative;
-            z-index: 50;
-        }
-        /* 只有在非刘海屏或者需要padding的时候调整，这里简单处理 */
+        .fake-nav-bar { height: 44px; display: flex; align-items: center; justify-content: space-between; padding: 0 12px; background-color: #fff; position: relative; z-index: 50; }
         .nav-left, .nav-right { width: 40px; display: flex; align-items: center; }
         .nav-back-icon { width: 12px; height: 20px; background: url("data:image/svg+xml,%3Csvg width='12' height='20' viewBox='0 0 12 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M10.5 1L1.5 10L10.5 19' stroke='black' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat center/contain; }
         .nav-dots-icon { width: 24px; height: 24px; background: url("data:image/svg+xml,%3Csvg width='24' height='24' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='4' cy='12' r='2' fill='black'/%3E%3Ccircle cx='12' cy='12' r='2' fill='black'/%3E%3Ccircle cx='20' cy='12' r='2' fill='black'/%3E%3C/svg%3E") no-repeat center/contain; margin-left: auto; }
 
-        /* 资料页头部 */
         .profile-header { padding: 10px 25px 35px; display: flex; align-items: flex-start; background: #fff; }
         .avatar { width: 64px; height: 64px; border-radius: 6px; margin-right: 20px; background: #eee; object-fit: cover; }
         .info-col { flex: 1; padding-top: 2px; }
         .name-row { display: flex; align-items: center; margin-bottom: 6px; }
         .nickname { font-size: 22px; font-weight: 600; color: #000; margin-right: 8px; line-height: 1.2; }
-        /* 蓝色男性图标 */
         .gender-icon { width: 16px; height: 16px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='none' d='M0 0h24v24H0z'/%3E%3Cpath d='M12 2a10 10 0 1 1-10 10A10 10 0 0 1 12 2zm0 2a8 8 0 1 0 8 8A8 8 0 0 0 12 4zm0 3a5 5 0 1 1-5 5A5 5 0 0 1 12 7zm0 2a3 3 0 1 0 3 3A3 3 0 0 0 12 9z' fill='%231677FF'/%3E%3C/svg%3E"); background-size: contain; background-repeat: no-repeat; }
         .region { font-size: 14px; color: #7f7f7f; }
 
-        /* 灰色分割条 */
         .gap { height: 10px; background-color: #ededed; }
-
-        /* 列表单元格 */
         .cell-group { background: #fff; padding-left: 25px; }
-        .cell { 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            padding: 18px 25px 18px 0; 
-            border-bottom: 1px solid #f0f0f0; 
-            position: relative;
-        }
+        .cell { display: flex; justify-content: space-between; align-items: center; padding: 18px 25px 18px 0; border-bottom: 1px solid #f0f0f0; position: relative; }
         .cell:last-child { border-bottom: none; }
-        
         .label { font-size: 16px; color: #111; font-weight: 500; width: 80px; }
         .content { flex: 1; text-align: left; font-size: 16px; color: #111; display: flex; align-items: center; }
         .arrow { width: 8px; height: 14px; background: url("data:image/svg+xml,%3Csvg width='8' height='13' viewBox='0 0 8 13' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1.06.94a.75.75 0 0 1 1.06 0l5.5 5.5a.75.75 0 0 1 0 1.06l-5.5 5.5a.75.75 0 1 1-1.06-1.06L5.94 7 1.06 2a.75.75 0 0 1 0-1.06z' fill='%23C7C7CC' fill-rule='evenodd'/%3E%3C/svg%3E") no-repeat center/contain; margin-left: auto; }
 
-        /* 底部操作区 */
         .bottom-area { background: #ededed; flex: 1; padding-top: 20px; display: flex; justify-content: center; align-items: flex-start; }
-        .action-btn { 
-            background: #fff; 
-            color: #576b95; 
-            font-size: 17px; 
-            font-weight: 600; 
-            width: 100%; 
-            padding: 14px 0; 
-            text-align: center; 
-            border-top: 1px solid #e5e5e5;
-            border-bottom: 1px solid #e5e5e5;
-        }
+        .action-btn { background: #fff; color: #576b95; font-size: 17px; font-weight: 600; width: 100%; padding: 14px 0; text-align: center; border-top: 1px solid #e5e5e5; border-bottom: 1px solid #e5e5e5; }
         .action-btn:active { background-color: #f2f2f2; }
 
-        /* --- 魔术红心 --- */
-        /* 这个容器覆盖在“朋友资料”那一栏 */
-        #magic-trigger-area {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 100; /* 保证在最上层，可以点击 */
-        }
-        #magic-heart {
-            position: absolute;
-            right: 20px; /* 位置在箭头附近 */
-            top: 50%;
-            transform: translateY(-50%) scale(1);
-            font-size: 32px;
-            
-            /* 关键：初始完全透明 */
-            opacity: 0; 
-            
-            pointer-events: none; /* 初始不阻挡点击，显形后JS会处理 */
-            transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            user-select: none;
-        }
-        #magic-heart.visible {
-            opacity: 1 !important;
-            pointer-events: auto; /* 显形后可以接受拖拽 */
-        }
-
+        /* 魔术区域 */
+        #magic-trigger-area { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; }
+        #magic-heart { position: absolute; right: 20px; top: 50%; transform: translateY(-50%) scale(1); font-size: 32px; opacity: 0; pointer-events: none; transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275); user-select: none; }
+        #magic-heart.visible { opacity: 1 !important; pointer-events: auto; }
+        
+        /* 这里的a标签用于强制点击 */
+        #hidden-link { display: none; }
     </style>
 </head>
 <body>
-
     <div id="setup-panel">
         <div class="setup-header">魔术设置</div>
-        
         <div class="input-group">
             <label>假的昵称</label>
-            <input type="text" id="fakeName" placeholder="例如：c1c2快速拿证-王校长">
+            <input type="text" id="fakeName" placeholder="例如：Alex">
         </div>
-
         <div class="input-group">
-            <label>头像链接 (URL)</label>
-            <input type="text" id="fakeAvatar" placeholder="粘贴你的头像链接">
-            <div class="hint">建议上传到图床获取 https 链接</div>
+            <label>头像链接</label>
+            <input type="text" id="fakeAvatar" placeholder="粘贴头像 URL">
         </div>
-
         <div class="input-group">
             <label>假的地区</label>
             <input type="text" id="fakeRegion" placeholder="例如：浙江 杭州">
         </div>
-
         <div class="input-group" style="border: 2px dashed #07C160; padding: 10px; background: #f0fdf4;">
-            <label style="color: #07C160;">★ 真实的跳转链接</label>
-            <input type="text" id="realUrl" placeholder="解析微信二维码得到的链接">
-            <div class="hint">必填：用“草料二维码”解析你的微信名片码</div>
+            <label style="color: #07C160;">★ 真实的跳转链接 (最重要)</label>
+            <input type="text" id="realUrl" placeholder="http://weixin.qq.com/r/...">
+            <div class="hint">请确保使用【二维码解码】后的长链接，不要缩短</div>
         </div>
-
-        <button class="btn-primary" onclick="generateMagic()">生成二维码</button>
-
-        <div style="margin-top: 40px; padding: 15px; background: #f5f5f5; border-radius: 8px; font-size: 13px; color: #666; line-height: 1.6;">
-            <strong>重要提示：</strong><br>
-            1. 在 Safari 中打开此页。<br>
-            2. 点击底部中间的【分享】按钮。<br>
-            3. 选择【添加到主屏幕】。<br>
-            4. 从桌面打开 App，浏览器顶部栏会自动消失。
-        </div>
+        <button class="btn-primary" onclick="generateMagic()">确认并生成</button>
     </div>
 
     <div id="qr-screen" class="hidden">
         <h3 style="margin-bottom: 20px;">观众扫码页</h3>
         <div id="qrcode"></div>
-        <p style="margin-top: 10px; color: #888; font-size: 14px;">让观众用微信扫一扫</p>
         <button onclick="location.reload()" style="margin-top: 40px; border: none; background: none; color: #999;">重新设置</button>
     </div>
 
     <div id="audience-view" class="hidden">
         <div style="height: env(safe-area-inset-top); background: #fff;"></div>
-        
         <div class="fake-nav-bar">
-            <div class="nav-left">
-                <div class="nav-back-icon"></div>
-            </div>
-            <div class="nav-right">
-                <div class="nav-dots-icon"></div>
-            </div>
+            <div class="nav-left"><div class="nav-back-icon"></div></div>
+            <div class="nav-right"><div class="nav-dots-icon"></div></div>
         </div>
-
         <div class="profile-header">
             <img id="view-avatar" src="" class="avatar">
             <div class="info-col">
@@ -187,51 +108,43 @@
                 <div id="view-region" class="region"></div>
             </div>
         </div>
-
         <div class="gap"></div>
-
         <div class="cell-group">
             <div class="cell">
                 <div class="label">朋友资料</div>
-                <div class="content"></div> <div class="arrow"></div>
-                
-                <div id="magic-trigger-area">
-                    <div id="magic-heart">❤️</div>
-                </div>
+                <div class="content"></div>
+                <div class="arrow"></div>
+                <div id="magic-trigger-area"><div id="magic-heart">❤️</div></div>
             </div>
         </div>
-
         <div class="gap"></div>
-
         <div class="cell-group">
             <div class="cell">
                 <div class="label">来源</div>
                 <div class="content" style="color: #7f7f7f;">来自扫一扫</div>
             </div>
         </div>
-
         <div class="bottom-area">
             <div class="action-btn">添加到通讯录</div>
         </div>
     </div>
+    
+    <a id="hidden-link" href="#" rel="nofollow"></a>
 
-<script>
-        // === 1. 初始化参数 ===
+    <script>
         const params = new URLSearchParams(window.location.search);
         const mode = params.get('mode');
-
         const setupPanel = document.getElementById('setup-panel');
         const qrScreen = document.getElementById('qr-screen');
         const audienceView = document.getElementById('audience-view');
         const heart = document.getElementById('magic-heart');
         const triggerArea = document.getElementById('magic-trigger-area');
+        const hiddenLink = document.getElementById('hidden-link');
 
-        // 状态变量
         let heartScale = 1;
         let isHeartVisible = false;
         let realDestUrl = "";
 
-        // === 2. 模式判断 ===
         if (mode === 'audience') {
             setupPanel.classList.add('hidden');
             qrScreen.classList.add('hidden');
@@ -239,45 +152,35 @@
             initAudience();
         }
 
-        // === 3. 魔术师设置逻辑 ===
         function generateMagic() {
-            const name = document.getElementById('fakeName').value || "未设置昵称";
-            const avatarInput = document.getElementById('fakeAvatar').value;
-            // 如果没填头像，生成一个随机的文字头像
-            const avatar = avatarInput || "https://ui-avatars.com/api/?name=" + encodeURIComponent(name) + "&background=random&color=fff&size=128";
+            const name = document.getElementById('fakeName').value || "未设置";
+            const avatar = document.getElementById('fakeAvatar').value || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&color=fff`;
             const region = document.getElementById('fakeRegion').value || "";
-            let url = document.getElementById('realUrl').value;
+            const url = document.getElementById('realUrl').value;
 
-            if (!url) { alert("严重警告：你没填跳转链接！"); return; }
-
-            // 清理一下链接前后的空格
-            url = url.trim();
+            if (!url) { alert("请填写跳转链接！"); return; }
 
             const baseUrl = window.location.origin + window.location.pathname;
             const fullUrl = `${baseUrl}?mode=audience&n=${encodeURIComponent(name)}&a=${encodeURIComponent(avatar)}&r=${encodeURIComponent(region)}&u=${encodeURIComponent(url)}`;
 
             setupPanel.classList.add('hidden');
             qrScreen.classList.remove('hidden');
-            
             document.getElementById("qrcode").innerHTML = "";
-            new QRCode(document.getElementById("qrcode"), { 
-                text: fullUrl, 
-                width: 250, 
-                height: 250,
-                correctLevel : QRCode.CorrectLevel.L // 降低容错率让码看起来稀疏一点，更好扫
-            });
+            new QRCode(document.getElementById("qrcode"), { text: fullUrl, width: 250, height: 250 });
         }
 
-        // === 4. 观众端逻辑 ===
         function initAudience() {
             document.getElementById('view-name').innerText = params.get('n');
             document.getElementById('view-avatar').src = params.get('a');
             const r = params.get('r');
             document.getElementById('view-region').innerText = r ? "地区：" + r : "";
-            
             realDestUrl = params.get('u');
 
-            // 绑定触摸事件
+            // 预设隐藏链接的href，方便后面模拟点击
+            if (realDestUrl) {
+                hiddenLink.href = realDestUrl;
+            }
+
             triggerArea.addEventListener('touchstart', handleTouchStart, {passive: false});
             triggerArea.addEventListener('touchmove', handleTouchMove, {passive: false});
             triggerArea.addEventListener('touchend', handleTouchEnd, {passive: false});
@@ -297,15 +200,14 @@
         function handleTouchMove(e) {
             if(e.cancelable) e.preventDefault();
             if (!isHeartVisible) return;
-
             const touch = e.touches[0];
+            
+            // 计算位移
             const dx = touch.clientX - startX;
             const dy = touch.clientY - startY;
 
-            // 稍微动一点就算拖拽，保证灵敏度
-            if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+            if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
                 isDragging = true;
-                
                 heart.style.position = 'fixed';
                 heart.style.zIndex = '9999';
                 heart.style.left = touch.clientX + 'px';
@@ -318,24 +220,21 @@
 
         function handleTouchEnd(e) {
             if (!isDragging) {
-                // ---> 点击逻辑
+                // --- 点击逻辑 ---
                 if (!isHeartVisible) {
-                    // 第一次点：显形
                     isHeartVisible = true;
                     heart.classList.add('visible');
-                    // 弹跳一下
-                    heart.style.transform = `translateY(-50%) scale(1.3)`;
+                    // 弹跳动画
+                    heart.style.transform = `translateY(-50%) scale(1.2)`;
                     setTimeout(() => heart.style.transform = `translateY(-50%) scale(1)`, 150);
                 } else {
-                    // 后续点：变大
                     heartScale += 0.8;
-                    if (heartScale > 7) heartScale = 7; // 最大倍数
-                    
+                    if (heartScale > 6) heartScale = 6;
                     const transformBase = heart.style.position === 'fixed' ? 'translate(-50%, -50%)' : 'translateY(-50%)';
                     heart.style.transform = `${transformBase} scale(${heartScale})`;
                 }
             } else {
-                // ---> 拖拽结束逻辑
+                // --- 拖拽结束逻辑 ---
                 const touch = e.changedTouches[0];
                 checkExit(touch.clientX, touch.clientY);
             }
@@ -344,45 +243,23 @@
         function checkExit(x, y) {
             const w = window.innerWidth;
             const h = window.innerHeight;
-            const edge = 20; // 边缘敏感度
+            const edge = 30;
 
-            // 如果触点在屏幕边缘
             if (x < edge || x > w - edge || y < edge || y > h - edge) {
-                
-                // 1. 爱心立刻消失
-                heart.style.display = 'none'; 
+                // 1. 立即消失
+                heart.style.display = 'none';
 
-                // 2. 强力跳转逻辑
+                // 2. 核心修正：不使用 setTimeout，直接触发点击或跳转
+                // 这能最大程度保留“用户手势”，告诉Safari这是用户想打开APP
                 if (realDestUrl) {
-                    // 只有100毫秒延迟，尽可能保留“用户触摸”的权限
-                    setTimeout(() => {
-                        forceJump(realDestUrl);
-                    }, 100);
+                    // 尝试模拟点击a标签（比window.location更稳）
+                    hiddenLink.click();
+                    
+                    // 双重保险：如果click没反应，尝试replace
+                    // (这行代码会在微小的延迟后执行，作为备用)
+                    // window.location.replace(realDestUrl);
                 }
             }
-        }
-
-        // ★★★ 核心修复：强力跳转函数 ★★★
-        function forceJump(url) {
-            // 方法A：如果链接里没有时间戳，加一个防止缓存
-            if (url.indexOf('?') === -1) {
-                url += '?t=' + new Date().getTime();
-            }
-
-            // 方法B：创建一个看不见的 A 标签并模拟点击
-            // 这是 iOS 上唤起 App 最稳妥的黑科技
-            const a = document.createElement('a');
-            a.setAttribute('href', url);
-            a.style.display = 'none';
-            document.body.appendChild(a);
-            
-            // 触发点击
-            a.click();
-            
-            // 如果 A 标签没反应，作为备选方案执行 replace
-            setTimeout(() => {
-                window.location.replace(url);
-            }, 200);
         }
     </script>
 </body>

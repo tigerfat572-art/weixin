@@ -2,385 +2,295 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>WeChat Magic</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="format-detection" content="telephone=no">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <meta name="apple-mobile-web-app-title" content="WeChat Magic">
     
+    <title>Magic Profile</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
     <style>
-        /* 全局重置 */
-        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; font-family: -apple-system, BlinkMacSystemFont, "San Francisco", "Helvetica Neue", Helvetica, Arial, sans-serif; }
-        body, html { width: 100%; height: 100%; overflow: hidden; user-select: none; -webkit-user-select: none; }
-        
-        /* 页面容器控制 */
-        .view { display: none; width: 100%; height: 100%; position: absolute; top: 0; left: 0; transition: opacity 0.3s; }
-        .view.active { display: flex; flex-direction: column; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "San Francisco", "Helvetica Neue", Helvetica, Arial, sans-serif; background-color: #ededed; overflow: hidden; }
 
-        /* --- 1. 设置页样式 (Setup) --- */
-        #setup-view { background: #f2f2f7; padding: 20px; overflow-y: auto; z-index: 100; }
-        .setup-header { text-align: center; margin-top: 40px; margin-bottom: 30px; }
-        .setup-header h1 { font-size: 24px; font-weight: 700; color: #333; }
-        .setup-header p { font-size: 14px; color: #888; margin-top: 5px; }
-        .form-group { background: #fff; border-radius: 12px; padding: 0 16px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-        .input-row { display: flex; align-items: center; padding: 16px 0; border-bottom: 1px solid #ebedf0; }
-        .input-row:last-child { border-bottom: none; }
-        .input-row label { width: 90px; font-size: 16px; color: #333; font-weight: 500; }
-        .input-row input { flex: 1; border: none; outline: none; font-size: 16px; text-align: right; color: #666; background: transparent; }
-        .btn-main { width: 100%; padding: 16px; background: #07c160; color: #fff; border: none; border-radius: 12px; font-size: 18px; font-weight: 600; margin-top: 20px; cursor: pointer; active: opacity: 0.8; }
+        /* 通用隐藏/显示类 */
+        .hidden { display: none !important; }
         
-        /* --- 2. 魔术师二维码页 (仿微信浅色模式) --- */
-        #qrcode-view { background: #fff; color: #000; }
-        /* 顶部导航栏模拟 */
-        .nav-bar { height: 44px; display: flex; align-items: center; padding: 0 16px; position: relative; margin-top: env(safe-area-inset-top); }
-        .nav-back { width: 12px; height: 20px; background-image: url("data:image/svg+xml,%3Csvg width='12' height='21' viewBox='0 0 12 21' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M10.5 19.5L1.5 10.5L10.5 1.5' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: center; }
-        .nav-title { position: absolute; left: 50%; transform: translateX(-50%); font-size: 17px; font-weight: 600; }
-        
-        /* 二维码卡片区域 */
-        .qr-container { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding-bottom: 100px; }
-        .user-card { display: flex; align-items: center; width: 85%; margin-bottom: 30px; }
-        .user-avatar { width: 64px; height: 64px; border-radius: 6px; background: #eee; background-size: cover; background-position: center; margin-right: 15px; }
-        .user-info h2 { font-size: 20px; font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; }
-        .gender-icon { width: 16px; height: 16px; margin-left: 5px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23576b95'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v4.61l2.59-2.59L17 10.41 13.41 14H18v2h-7V9z'/%3E%3C/svg%3E") no-repeat center; display: none; /* 简化处理 */ }
-        .user-info p { font-size: 14px; color: #7e7e7e; }
-        
-        .qr-box { width: 300px; height: 300px; display: flex; align-items: center; justify-content: center; position: relative; }
-        /* 微信二维码的三个定位点样式模拟 (可选，这里直接用qrcode.js生成的图) */
-        .qr-desc { margin-top: 25px; color: #7e7e7e; font-size: 14px; }
+        /* 1. 设置界面 (魔术师可见) */
+        #setup-panel { padding: 20px; background: white; height: 100%; overflow-y: auto; }
+        .input-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: #333; }
+        input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; }
+        .btn { width: 100%; padding: 15px; background-color: #07c160; color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; margin-top: 20px; cursor: pointer; }
+        .hint { font-size: 12px; color: #888; margin-top: 5px; }
 
-        /* --- 3. 观众端个人主页 (仿微信深色模式) --- */
-        #viewer-view { background: #111111; color: #fff; overflow-y: scroll; }
-        .dark-nav { background: #111; color: #fff; }
-        .dark-nav .nav-back { background-image: url("data:image/svg+xml,%3Csvg width='12' height='21' viewBox='0 0 12 21' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M10.5 19.5L1.5 10.5L10.5 1.5' stroke='white' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
-        .more-btn { position: absolute; right: 16px; width: 24px; height: 24px; background-image: url("data:image/svg+xml,%3Csvg width='24' height='24' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='4' cy='12' r='2' fill='white'/%3E%3Ccircle cx='12' cy='12' r='2' fill='white'/%3E%3Ccircle cx='20' cy='12' r='2' fill='white'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: center; }
+        /* 2. 二维码展示界面 (魔术师手机展示给观众) */
+        #qr-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; background: white; }
+        #qrcode { margin: 20px; }
+        .qr-text { font-size: 16px; color: #333; margin-top: 10px; }
 
-        .profile-header { display: flex; padding: 20px 24px 30px; align-items: flex-start; }
-        .p-avatar { width: 70px; height: 70px; border-radius: 8px; margin-right: 20px; background-color: #333; background-size: cover; background-position: center; flex-shrink: 0; }
-        .p-info { flex: 1; margin-top: 2px; }
-        .p-name { font-size: 22px; font-weight: 700; color: #fff; margin-bottom: 4px; display: flex; align-items: center; }
-        .p-meta { font-size: 14px; color: #787878; margin-bottom: 2px; }
+        /* 3. 观众互动界面 (高仿微信资料页) */
+        #audience-view { background-color: #fff; height: 100%; position: relative; }
+        .profile-header { padding: 40px 20px 20px; display: flex; align-items: flex-start; }
+        .avatar { width: 64px; height: 64px; border-radius: 6px; background-color: #eee; object-fit: cover; margin-right: 15px; }
+        .info { flex: 1; }
+        .nickname { font-size: 22px; font-weight: 600; color: #000; margin-bottom: 5px; }
+        .sub-info { font-size: 14px; color: #7f7f7f; margin-bottom: 2px; }
         
-        .cell-group { margin-top: 8px; }
-        .cell { background: #191919; padding: 18px 24px; display: flex; align-items: flex-start; margin-bottom: 1px; position: relative; }
-        .cell-label { width: 80px; font-size: 16px; color: #fff; flex-shrink: 0; }
-        .cell-content { flex: 1; font-size: 16px; color: #787878; padding-right: 20px; line-height: 1.4; position: relative; }
-        .cell-arrow { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); width: 8px; height: 14px; opacity: 0.3; background-image: url("data:image/svg+xml,%3Csvg width='8' height='14' viewBox='0 0 8 14' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 13L7 7L1 1' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; }
+        .divider { height: 10px; background-color: #ededed; border-top: 1px solid #e5e5e5; border-bottom: 1px solid #e5e5e5; }
         
-        /* 朋友圈缩略图模拟 */
-        .moments-preview { display: flex; gap: 6px; margin-top: -2px; }
-        .m-img { width: 32px; height: 32px; background: #333; border-radius: 4px; }
-        
-        .footer-action { position: fixed; bottom: 0; left: 0; width: 100%; padding: 16px 24px 34px; background: #111; border-top: 1px solid #222; display: flex; gap: 12px; }
-        .btn-action { flex: 1; height: 50px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 17px; font-weight: 600; }
-        .btn-message { background: #191919; color: #fff; }
-        .btn-add { background: #07c160; color: #fff; }
+        .cell { display: flex; justify-content: space-between; padding: 15px 20px; border-bottom: 1px solid #f0f0f0; align-items: center; }
+        .cell-label { font-size: 16px; color: #000; }
+        .cell-value { font-size: 14px; color: #7f7f7f; display: flex; align-items: center; }
+        .arrow { margin-left: 10px; color: #c7c7cc; }
 
-        /* --- 4. 魔法红心 (核心机关) --- */
+        /* 签名栏 & 爱心 */
+        .signature-area { padding: 15px 20px; border-bottom: 1px solid #f0f0f0; position: relative; min-height: 60px; }
+        .sig-text { font-size: 14px; color: #7f7f7f; }
+        
         #magic-heart {
             position: absolute;
-            width: 16px;
-            height: 16px;
-            /* 放在签名内容的最后 */
-            display: inline-block;
-            vertical-align: middle;
-            margin-left: 5px;
-            z-index: 9999;
-            touch-action: none; /* 禁止浏览器默认滚动 */
-            transform-origin: center center;
-            /* 初始红心样式 */
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='%23fa5151' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-size: contain;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%) scale(1);
+            font-size: 24px;
+            width: 40px;
+            height: 40px;
+            line-height: 40px;
+            text-align: center;
+            cursor: pointer;
+            user-select: none;
+            transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 100;
         }
+
+        .action-area { padding: 20px; margin-top: 20px; }
+        .fake-btn { width: 100%; background-color: #07c160; color: white; text-align: center; padding: 12px; border-radius: 6px; font-weight: 600; font-size: 17px; }
 
     </style>
 </head>
 <body>
 
-    <div id="setup-view" class="view active">
-        <div class="setup-header">
-            <h1>魔术师设置</h1>
-            <p>添加到主屏幕后体验更佳</p>
+    <div id="setup-panel">
+        <h2>魔术设置</h2>
+        <div class="input-group">
+            <label>假的昵称</label>
+            <input type="text" id="fakeName" value="MagicUser" placeholder="例如：刘谦">
+        </div>
+        <div class="input-group">
+            <label>头像 URL</label>
+            <input type="text" id="fakeAvatar" value="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" placeholder="输入图片链接">
+            <div class="hint">建议使用在线图片链接</div>
+        </div>
+        <div class="input-group">
+            <label>地区/微信号 (显示的假信息)</label>
+            <input type="text" id="fakeRegion" value="地区: 中国 北京" placeholder="例如：微信号: wxid_123456">
+        </div>
+        <div class="input-group">
+            <label>真实的加好友链接 (跳转目标)</label>
+            <input type="text" id="realUrl" placeholder="粘贴你的微信二维码解析出的链接或个人主页">
+            <div class="hint">怎么获取？用草料二维码扫描你的微信名片，把解析出来的链接贴在这里。</div>
         </div>
         
-        <div class="form-group">
-            <div class="input-row">
-                <label>假昵称</label>
-                <input type="text" id="fakeName" value="冯唐骏">
-            </div>
-            <div class="input-row">
-                <label>假地区</label>
-                <input type="text" id="fakeRegion" value="浙江 杭州">
-            </div>
-            <div class="input-row">
-                <label>个性签名</label>
-                <input type="text" id="fakeSign" value="我爱果汁，我爱果汁">
-            </div>
-            <div class="input-row">
-                <label>头像URL</label>
-                <input type="text" id="fakeAvatar" value="https://i.pravatar.cc/300?img=11">
-            </div>
-        </div>
-
-        <div class="form-group">
-            <div class="input-row" style="border-bottom:none;">
-                <label style="color:#07c160;">真实跳转</label>
-                <input type="text" id="realLink" placeholder="例如真实加好友链接或URL">
-            </div>
-        </div>
-        <p style="font-size:12px; color:#999; padding:0 10px;">提示：真实跳转建议填写真实二维码图片的网络地址，或者填 `weixin://` (可能被拦截)。</p>
-
-        <button class="btn-main" onclick="generateMagic()">生成魔术</button>
-    </div>
-
-    <div id="qrcode-view" class="view">
-        <div class="nav-bar">
-            <div class="nav-back" onclick="location.reload()"></div>
-            <div class="nav-title">二维码名片</div>
-        </div>
-        <div class="qr-container">
-            <div class="user-card">
-                <div class="user-avatar" id="qr-avatar-img"></div>
-                <div class="user-info">
-                    <h2 id="qr-name-text">用户昵称</h2>
-                    <p id="qr-region-text">地区</p>
-                </div>
-            </div>
-            <div class="qr-box" id="qr-output"></div>
-            <p class="qr-desc">扫一扫上面的二维码图案，加我为朋友</p>
+        <button class="btn" onclick="generateMagic()">确认并生成二维码</button>
+        
+        <div style="margin-top:30px; padding:15px; background:#f9f9f9; border-radius:8px;">
+            <h4>使用说明：</h4>
+            <ol style="font-size:13px; color:#555; padding-left:20px;">
+                <li>在Safari中打开此页。</li>
+                <li>点击底部“分享”图标 -> “添加到主屏幕”。</li>
+                <li>从桌面打开 App，填写上方信息。</li>
+                <li>点击确认，给观众展示生成的二维码。</li>
+            </ol>
         </div>
     </div>
 
-    <div id="viewer-view" class="view">
-        <div class="nav-bar dark-nav">
-            <div class="nav-back"></div>
-            <div class="more-btn"></div>
-        </div>
+    <div id="qr-screen" class="hidden">
+        <h3>扫一扫加我好友</h3>
+        <div id="qrcode"></div>
+        <p class="qr-text">扫描上方二维码</p>
+        <button onclick="location.reload()" style="margin-top:50px; background:none; border:none; color:#ccc;">重置</button>
+    </div>
 
+    <div id="audience-view" class="hidden">
         <div class="profile-header">
-            <div class="p-avatar" id="p-avatar-img"></div>
-            <div class="p-info">
-                <div class="p-name" id="p-name-text">用户昵称</div>
-                <div class="p-meta">微信号：wxid_random882</div>
-                <div class="p-meta" id="p-region-text">地区</div>
+            <img id="view-avatar" src="" class="avatar">
+            <div class="info">
+                <div id="view-name" class="nickname"></div>
+                <div id="view-region" class="sub-info"></div>
             </div>
         </div>
-
-        <div class="cell-group">
-            <div class="cell">
-                <div class="cell-label">朋友圈</div>
-                <div class="cell-content">
-                    <div class="moments-preview">
-                        <div class="m-img" style="opacity:0.6"></div>
-                        <div class="m-img" style="opacity:0.4"></div>
-                    </div>
-                </div>
-                <div class="cell-arrow"></div>
-            </div>
-            <div class="cell">
-                <div class="cell-label">视频号</div>
-                <div class="cell-content" style="color:#576b95">视频号动态</div>
-                <div class="cell-arrow"></div>
-            </div>
-            <div class="cell">
-                <div class="cell-label">更多信息</div>
-                <div class="cell-content"></div>
-                <div class="cell-arrow"></div>
-            </div>
-            <div class="cell" style="margin-top: 8px;">
-                <div class="cell-label">个性签名</div>
-                <div class="cell-content">
-                    <span id="p-sign-text">默认签名</span>
-                    <div id="magic-heart"></div>
-                </div>
+        <div class="divider"></div>
+        <div class="cell">
+            <span class="cell-label">朋友圈</span>
+            <div class="cell-value">
+                <span class="arrow">></span>
             </div>
         </div>
+        <div class="divider"></div>
+        
+        <div class="cell">
+            <span class="cell-label">个性签名</span>
+        </div>
+        <div class="signature-area">
+            <span class="sig-text">Nothing is impossible...</span>
+            <div id="magic-heart">❤️</div>
+        </div>
 
-        <div class="footer-action">
-            <div class="btn-action btn-message">发消息</div>
-            <div class="btn-action btn-add">添加到通讯录</div>
+        <div class="divider"></div>
+        <div class="action-area">
+            <div class="fake-btn">添加到通讯录</div>
         </div>
     </div>
 
     <script>
-        // 核心逻辑
-        const state = {
-            fakeName: '',
-            fakeRegion: '',
-            fakeSign: '',
-            fakeAvatar: '',
-            realLink: ''
-        };
+        // 获取 URL 参数
+        const params = new URLSearchParams(window.location.search);
+        const mode = params.get('mode');
 
-        // 初始化
-        window.onload = function() {
-            const params = new URLSearchParams(window.location.search);
-            const dataStr = params.get('data');
+        // DOM 元素
+        const setupPanel = document.getElementById('setup-panel');
+        const qrScreen = document.getElementById('qr-screen');
+        const audienceView = document.getElementById('audience-view');
+        const heart = document.getElementById('magic-heart');
 
-            if (dataStr) {
-                // 如果有数据，说明是【观众模式】
-                try {
-                    const data = JSON.parse(atob(dataStr));
-                    setupViewerMode(data);
-                } catch(e) {
-                    alert('数据解析错误');
-                }
-            } else {
-                // 没有数据，说明是【设置模式】
-                // 检查是否已经在展示二维码阶段
-                if(sessionStorage.getItem('magicReady')) {
-                    // 这里简化处理，刷新还是回设置页
-                }
-            }
-        };
+        // 逻辑初始化
+        if (mode === 'audience') {
+            // ---> 观众模式
+            setupPanel.classList.add('hidden');
+            audienceView.classList.remove('hidden');
+            initAudienceView();
+        } else {
+            // ---> 魔术师设置模式
+            // 如果是 PWA 启动（standalone），这里依然显示设置，直到点击生成
+            // 可以在这里加逻辑判断是否已经保存过配置，为了演示简单，每次都重新输入或读取默认
+        }
 
-        // 1. 生成魔术 (魔术师点击)
+        // --- 魔术师端逻辑 ---
         function generateMagic() {
-            // 获取输入
-            const data = {
-                n: document.getElementById('fakeName').value,
-                r: document.getElementById('fakeRegion').value,
-                s: document.getElementById('fakeSign').value,
-                a: document.getElementById('fakeAvatar').value,
-                l: document.getElementById('realLink').value || 'weixin://'
-            };
+            const fakeName = document.getElementById('fakeName').value;
+            const fakeAvatar = document.getElementById('fakeAvatar').value;
+            const fakeRegion = document.getElementById('fakeRegion').value;
+            const realUrl = document.getElementById('realUrl').value;
 
-            // 渲染二维码页数据
-            document.getElementById('qr-name-text').innerText = data.n;
-            document.getElementById('qr-region-text').innerText = data.r;
-            document.getElementById('qr-avatar-img').style.backgroundImage = `url(${data.a})`;
+            if (!realUrl) {
+                alert("请填写跳转的真实链接！");
+                return;
+            }
 
-            // 生成给观众扫的链接
-            // 构造当前页面的URL + 参数
-            const baseUrl = window.location.href.split('?')[0];
-            const payload = btoa(JSON.stringify(data));
-            const viewerUrl = `${baseUrl}?data=${payload}`;
+            // 构建观众访问的 URL
+            // 注意：因为 URL 长度限制，实际生产中最好把数据存数据库，只传 ID。
+            // 这里为了无后端纯前端，直接 encode 数据。
+            const baseUrl = window.location.origin + window.location.pathname;
+            const audienceUrl = `${baseUrl}?mode=audience&n=${encodeURIComponent(fakeName)}&a=${encodeURIComponent(fakeAvatar)}&r=${encodeURIComponent(fakeRegion)}&u=${encodeURIComponent(realUrl)}`;
 
             // 生成二维码
-            document.getElementById('qr-output').innerHTML = '';
-            new QRCode(document.getElementById('qr-output'), {
-                text: viewerUrl,
-                width: 240,
-                height: 240,
-                colorDark : "#000000",
-                colorLight : "#ffffff",
-                correctLevel : QRCode.CorrectLevel.L
+            setupPanel.classList.add('hidden');
+            qrScreen.classList.remove('hidden');
+            
+            new QRCode(document.getElementById("qrcode"), {
+                text: audienceUrl,
+                width: 250,
+                height: 250
             });
-
-            // 切换视图
-            switchView('qrcode-view');
         }
 
-        // 2. 观众模式初始化
-        function setupViewerMode(data) {
-            // 填充数据
-            document.getElementById('p-name-text').innerText = data.n;
-            document.getElementById('p-region-text').innerText = data.r;
-            document.getElementById('p-sign-text').innerText = data.s;
-            document.getElementById('p-avatar-img').style.backgroundImage = `url(${data.a})`;
-            
-            // 绑定真实跳转链接
-            state.realLink = data.l;
+        // --- 观众端逻辑 ---
+        let scale = 1;
+        let clickCount = 0;
+        let isDragging = false;
+        let realDestUrl = "";
 
-            // 切换到观众视图
-            switchView('viewer-view');
+        function initAudienceView() {
+            // 填充假数据
+            document.getElementById('view-name').innerText = params.get('n') || "Unknown";
+            document.getElementById('view-avatar').src = params.get('a') || "";
+            document.getElementById('view-region').innerText = params.get('r') || "";
+            realDestUrl = params.get('u');
 
-            // 初始化红心交互
-            initMagicHeart();
+            // 绑定爱心事件
+            heart.addEventListener('click', growHeart);
+            heart.addEventListener('touchstart', startDrag, {passive: false});
+            heart.addEventListener('touchmove', dragHeart, {passive: false});
+            heart.addEventListener('touchend', endDrag);
         }
 
-        // 3. 核心机关：红心交互
-        function initMagicHeart() {
-            const heart = document.getElementById('magic-heart');
-            let scale = 1;
-            let clickCount = 0;
-            
-            // 拖拽相关变量
-            let isDragging = false;
-            let startX, startY, initialLeft, initialTop;
-            
-            // 点击事件：变大
-            heart.addEventListener('click', (e) => {
-                if(isDragging) return;
+        function growHeart(e) {
+            // 只有在非拖拽状态下点击才变大
+            if (!isDragging) {
                 clickCount++;
-                scale += 0.5; // 每次点击增加倍数
-                heart.style.transition = "transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)";
-                heart.style.transform = `scale(${scale})`;
-            });
-
-            // 触摸开始
-            heart.addEventListener('touchstart', (e) => {
-                isDragging = false;
-                const touch = e.touches[0];
-                startX = touch.clientX;
-                startY = touch.clientY;
-                
-                // 获取当前相对视口的位置，转为绝对定位以实现全屏拖拽
-                const rect = heart.getBoundingClientRect();
-                
-                // 暂时移除transition以实现跟手
-                heart.style.transition = 'none';
-                
-                // 设置为fixed定位以便拖拽出容器
-                heart.style.position = 'fixed';
-                heart.style.left = rect.left + 'px';
-                heart.style.top = rect.top + 'px';
-                heart.style.margin = 0; // 清除margin
-                
-                // 计算点击点相对于元素的偏移
-                initialLeft = rect.left;
-                initialTop = rect.top;
-            }, {passive: false});
-
-            // 触摸移动
-            heart.addEventListener('touchmove', (e) => {
-                e.preventDefault(); // 防止屏幕滚动
-                isDragging = true;
-                const touch = e.touches[0];
-                const deltaX = touch.clientX - startX;
-                const deltaY = touch.clientY - startY;
-                
-                heart.style.left = (initialLeft + deltaX) + 'px';
-                heart.style.top = (initialTop + deltaY) + 'px';
-            }, {passive: false});
-
-            // 触摸结束
-            heart.addEventListener('touchend', (e) => {
-                const rect = heart.getBoundingClientRect();
-                const screenW = window.innerWidth;
-                const screenH = window.innerHeight;
-                
-                // 判断是否移出屏幕 (预留20px缓冲)
-                const isOut = rect.right < 0 || rect.left > screenW || rect.bottom < 0 || rect.top > screenH;
-                
-                if (isOut) {
-                    // 触发跳转！
-                    revealTruth();
-                } else {
-                    // 如果没拖出去，也不复位了，就留在那里更有趣，或者你可以选择复位
-                }
-            });
-        }
-
-        // 4. 揭秘时刻
-        function revealTruth() {
-            // 震动反馈 (安卓有效，iOS部分情况有效)
-            if(navigator.vibrate) navigator.vibrate(200);
-            
-            // 跳转
-            if (state.realLink) {
-                window.location.href = state.realLink;
-            } else {
-                alert("跳转链接未设置");
+                scale += 0.5; // 每次变大倍数
+                heart.style.transform = `translateY(-50%) scale(${scale})`;
             }
         }
 
-        // 辅助工具：切换视图
-        function switchView(viewId) {
-            document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
-            document.getElementById(viewId).classList.add('active');
+        // 拖拽相关变量
+        let startX, startY, initialLeft, initialTop;
+        
+        function startDrag(e) {
+            isDragging = true;
+            const touch = e.touches[0];
+            startX = touch.clientX;
+            startY = touch.clientY;
+            
+            // 获取当前元素位置（相对于视口）
+            const rect = heart.getBoundingClientRect();
+            
+            // 记录偏移量
+            heart.dataset.offsetX = touch.clientX - rect.left;
+            heart.dataset.offsetY = touch.clientY - rect.top;
         }
+
+        function dragHeart(e) {
+            e.preventDefault(); // 防止屏幕滚动
+            const touch = e.touches[0];
+            
+            // 简单的跟随手指逻辑
+            // 为了视觉流畅，这里直接设置 fixed 定位跟随
+            heart.style.position = 'fixed';
+            heart.style.top = (touch.clientY) + 'px';
+            heart.style.left = (touch.clientX) + 'px';
+            heart.style.transform = `translate(-50%, -50%) scale(${scale})`; // 保持之前变大的大小
+            heart.style.margin = 0;
+            heart.style.right = 'auto';
+        }
+
+        function endDrag(e) {
+            isDragging = false;
+            const touch = e.changedTouches[0];
+            const x = touch.clientX;
+            const y = touch.clientY;
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+
+            // 判断是否移出屏幕 (设置一个缓冲区，比如靠近边缘 20px 就算移出)
+            const edgeThreshold = 30;
+            
+            if (x < edgeThreshold || x > w - edgeThreshold || y < edgeThreshold || y > h - edgeThreshold) {
+                // ---> 触发魔术效果
+                triggerMagic();
+            } else {
+                // 如果没移出，复位（可选，或者就留在那）
+                // 这里为了简单，如果没移出去，就留在最后的位置
+            }
+        }
+
+        function triggerMagic() {
+            // 可以在这里加一个消失动画
+            heart.style.transition = "all 0.3s";
+            heart.style.opacity = "0";
+            
+            // 延迟一点点跳转，给魔术师拿东西的时间
+            setTimeout(() => {
+                if(realDestUrl) {
+                    window.location.href = realDestUrl;
+                }
+            }, 300);
+        }
+
     </script>
 </body>
 </html>

@@ -11,24 +11,23 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
     <style>
-        /* --- 基础设置 --- */
+        /* --- 基础重置 --- */
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; -webkit-user-select: none; user-select: none; }
         body, html { width: 100%; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", Arial, sans-serif; background-color: #EDEDED; overflow: hidden; }
         .hidden { display: none !important; }
 
-        /* --- 设置面板 --- */
+        /* --- 1. 设置面板 --- */
         #setup-panel { padding: 20px; background: white; height: 100%; overflow-y: auto; z-index: 9999; position: absolute; top: 0; left: 0; width: 100%; }
         .setup-title { font-size: 20px; font-weight: 800; text-align: center; margin: 30px 0; color: #333; }
         .input-group { margin-bottom: 20px; }
         label { display: block; margin-bottom: 8px; font-weight: 600; color: #333; font-size: 15px; }
         input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; background: #f9f9f9; -webkit-user-select: text; user-select: text; }
-        .hint { font-size: 12px; color: #888; margin-top: 5px; line-height: 1.4; }
         .btn-primary { width: 100%; padding: 16px; background-color: #07C160; color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: 600; cursor: pointer; margin-top: 20px; box-shadow: 0 4px 12px rgba(7, 193, 96, 0.3); }
 
-        /* --- 二维码展示页 --- */
+        /* --- 2. 二维码展示页 --- */
         #qr-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; background: #fff; z-index: 9999; position: absolute; top: 0; left: 0; width: 100%; }
 
-        /* --- 观众端 UI (微信风格) --- */
+        /* --- 3. 观众端 UI (微信风格) --- */
         #app-view { background-color: #EDEDED; height: 100%; display: flex; flex-direction: column; position: relative; width: 100%; }
 
         .nav-bar { height: 44px; display: flex; align-items: center; justify-content: space-between; padding: 0 8px; background-color: #EDEDED; position: relative; z-index: 50; }
@@ -56,40 +55,41 @@
         .bottom-area { flex: 1; display: flex; justify-content: center; padding-top: 24px; }
         .action-btn { background: #fff; color: #576b95; font-size: 17px; font-weight: 700; width: 100%; padding: 16px 0; text-align: center; border-top: 0.5px solid #e5e5e5; border-bottom: 0.5px solid #e5e5e5; }
 
-        /* --- 魔术特有元素 --- */
+        /* --- 4. 魔术特有元素 (红心) --- */
         #magic-trigger-area { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 500; }
+        
         #magic-heart { 
-            position: absolute; right: 24px; top: 50%; transform: translateY(-50%) scale(1); 
-            font-size: 32px; color: #fa5151; opacity: 0; 
-            transition: transform 0.1s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: absolute; right: 24px; top: 50%; transform: translateY(-50%) scale(0); /* 初始比例0 */
+            font-size: 32px; color: #fa5151; 
+            opacity: 0; /* 初始看不见 */
+            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s;
             z-index: 1000;
         }
-        #magic-heart.visible { opacity: 1 !important; }
+        /* 显形样式 */
+        #magic-heart.appeared { opacity: 1; transform: translateY(-50%) scale(1); }
 
-        /* --- 隐形真实二维码 (关键) --- */
+        /* --- 5. 隐形真实二维码 (结局层) --- */
         #hidden-real-qrcode {
-            position: fixed; 
-            top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 9999; /* 保证在最上层 */
-            display: none; /* 初始不显示 */
-            opacity: 0.01; /* 关键：几乎透明，但必须不是0，否则有些浏览器认为不可点击 */
-            display: flex; align-items: center; justify-content: center;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 9999; 
+            display: none; /* 初始隐藏 */
+            opacity: 0.01; /* 几乎透明，但可长按 */
+            align-items: center; justify-content: center;
+            background: white; /* 确保背景存在 */
         }
-        /* 生成的二维码图片样式，撑满屏幕方便长按 */
         #hidden-real-qrcode img {
-            width: 80%; 
-            height: auto;
-            opacity: 0.01; /* 图片也透明 */
+            width: 300px; height: 300px; /* 足够大，方便长按 */
+            opacity: 0.01; 
         }
     </style>
 </head>
 <body>
 
     <div id="setup-panel">
-        <div class="setup-title">魔术设置 (长按显形版)</div>
+        <div class="setup-title">魔术设置 (完整流程版)</div>
         
         <div class="input-group">
-            <label>1. 假的昵称 (观众看到的)</label>
+            <label>1. 假的昵称</label>
             <input type="text" id="fakeName" value="c1c2快速拿证-王校长">
         </div>
         <div class="input-group">
@@ -98,32 +98,25 @@
         </div>
 
         <div class="input-group" style="background:#f0fdf4; padding:15px; border-radius:10px; border:1px dashed #07C160;">
-            <label style="color:#07C160;">3. 真实的二维码链接 (核心)</label>
+            <label style="color:#07C160;">3. 真实的二维码链接</label>
             <input type="text" id="realQrUrl" placeholder="http://weixin.qq.com/r/...">
-            <div class="hint">
-                <strong>如何获取？</strong><br>
-                1. 微信 -> 我的 -> 二维码 -> 保存图片<br>
-                2. 百度搜索“草料二维码解码”<br>
-                3. 上传图片，复制解码后的链接填入上方
+            <div style="font-size:12px; color:#666; margin-top:5px;">
+                必须填！去草料二维码解码你的微信名片，把那串链接填进来。
             </div>
-        </div>
-        <div class="hint" style="text-align:center; color:#fa5151;">
-            注意：不用传图片，只填链接，我会自动生成隐形码。
         </div>
 
         <button class="btn-primary" onclick="generateMagic()">生成二维码</button>
     </div>
 
     <div id="qr-screen" class="hidden">
-        <h3 style="margin-top:60px; margin-bottom:20px; color:#333;">让观众扫一扫</h3>
+        <h3 style="margin-top:60px; margin-bottom:20px; color:#333;">观众扫码页</h3>
         <div id="qrcode"></div>
-        <p style="text-align:center; color:#999; margin-top:20px; font-size:13px;">观众长按屏幕时，会自动识别你的真码</p>
-        <button onclick="location.reload()" style="margin-top:40px; border:none; background:none; color:#999;">重置</button>
+        <p style="text-align:center; color:#999; margin-top:20px; font-size:13px;">表演流程：点资料 -> 红心出现 -> 拖走 -> 长按显形</p>
+        <button onclick="location.reload()" style="margin-top:40px; border:none; background:none; color:#999;">重新设置</button>
     </div>
 
     <div id="app-view" class="hidden">
         <div style="height: env(safe-area-inset-top); background: #EDEDED;"></div>
-        
         <div class="nav-bar">
             <div class="nav-left"><div class="nav-back"></div></div>
             <div class="nav-right"><div class="nav-more"></div></div>
@@ -143,10 +136,11 @@
         <div class="gap"></div>
 
         <div class="cell-group">
-            <div class="cell">
+            <div class="cell" id="profile-row">
                 <div class="label">朋友资料</div>
                 <div class="content"></div>
                 <div class="arrow"></div>
+                
                 <div id="magic-trigger-area">
                     <div id="magic-heart">❤️</div>
                 </div>
@@ -170,7 +164,7 @@
     </div>
 
     <script>
-        // --- 变量与初始化 ---
+        // --- 初始化 ---
         const setupPanel = document.getElementById('setup-panel');
         const qrScreen = document.getElementById('qr-screen');
         const appView = document.getElementById('app-view');
@@ -178,8 +172,9 @@
         const uiAvatar = document.getElementById('ui-avatar');
         const uiName = document.getElementById('ui-name');
         
+        const profileRow = document.getElementById('profile-row');
         const heart = document.getElementById('magic-heart');
-        const triggerArea = document.getElementById('magic-trigger-area');
+        const triggerArea = document.getElementById('magic-trigger-area'); // 覆盖在红心上的触摸层
         const hiddenQrLayer = document.getElementById('hidden-real-qrcode');
 
         // --- 1. 获取参数 (观众模式) ---
@@ -193,29 +188,27 @@
             uiName.innerText = decodeURIComponent(params.get('fn') || "");
             uiAvatar.src = decodeURIComponent(params.get('fa') || "");
 
-            // 生成【隐形】的真二维码
+            // 预生成真二维码 (放在隐形层)
             const realUrl = decodeURIComponent(params.get('rurl'));
             if (realUrl) {
-                // 生成一个巨大的二维码放在隐形层里
                 new QRCode(hiddenQrLayer, {
                     text: realUrl,
-                    width: 300,
-                    height: 300,
-                    correctLevel: QRCode.CorrectLevel.L // 低容错，码更简单，更容易识别
+                    width: 300, height: 300,
+                    correctLevel: QRCode.CorrectLevel.L 
                 });
             }
 
-            // 启动事件
-            initMagicEvents();
+            // 启动交互
+            initInteractions();
         }
 
-        // --- 2. 生成入口二维码 (魔术师) ---
+        // --- 2. 生成 (魔术师模式) ---
         function generateMagic() {
             const fn = document.getElementById('fakeName').value || "Unknown";
             const fa = document.getElementById('fakeAvatar').value || `https://ui-avatars.com/api/?name=${encodeURIComponent(fn)}&background=random&color=fff`;
             const rurl = document.getElementById('realQrUrl').value;
 
-            if(!rurl) { alert("必须填写真实的二维码链接！"); return; }
+            if(!rurl) { alert("必须填写真实二维码链接！"); return; }
 
             const baseUrl = window.location.origin + window.location.pathname;
             const query = `?mode=show&fn=${encodeURIComponent(fn)}&fa=${encodeURIComponent(fa)}&rurl=${encodeURIComponent(rurl)}`;
@@ -229,78 +222,98 @@
             });
         }
 
-        // --- 3. 互动逻辑 ---
+        // --- 3. 核心交互逻辑 (全流程) ---
+        let heartState = 0; // 0:未出现, 1:已出现, 2:拖拽中
+        let heartScale = 1; 
         let startX, startY;
-        let isDragging = false;
-        let heartScale = 1;
-        let isHeartVisible = false;
 
-        function initMagicEvents() {
-            triggerArea.addEventListener('touchstart', (e) => {
-                if(e.cancelable) e.preventDefault();
-                startX = e.touches[0].clientX;
-                startY = e.touches[0].clientY;
-                isDragging = false;
-            }, {passive: false});
-
-            triggerArea.addEventListener('touchmove', (e) => {
-                if(e.cancelable) e.preventDefault();
-                if (!isHeartVisible) return;
-
-                const dx = e.touches[0].clientX - startX;
-                const dy = e.touches[0].clientY - startY;
-
-                if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
-                    isDragging = true;
-                    heart.style.position = 'fixed';
-                    heart.style.zIndex = '9999';
-                    heart.style.left = e.touches[0].clientX + 'px';
-                    heart.style.top = e.touches[0].clientY + 'px';
-                    heart.style.margin = 0; heart.style.right = 'auto';
-                    heart.style.transform = `translate(-50%, -50%) scale(${heartScale})`;
-                }
-            }, {passive: false});
-
-            triggerArea.addEventListener('touchend', (e) => {
-                if (!isDragging) {
-                    // 点击
-                    if (!isHeartVisible) {
-                        isHeartVisible = true;
-                        heart.classList.add('visible');
-                        heart.style.transform = `translateY(-50%) scale(1.2)`;
-                        setTimeout(() => heart.style.transform = `translateY(-50%) scale(1)`, 150);
-                    } else {
-                        heartScale += 0.6;
-                        const base = heart.style.position === 'fixed' ? 'translate(-50%, -50%)' : 'translateY(-50%)';
-                        heart.style.transform = `${base} scale(${heartScale})`;
-                    }
-                } else {
-                    // 拖拽结束
-                    const touch = e.changedTouches[0];
-                    checkExit(touch.clientX, touch.clientY);
+        function initInteractions() {
+            // A. 点击“朋友资料”整行 -> 召唤红心
+            profileRow.addEventListener('click', () => {
+                if (heartState === 0) {
+                    heartState = 1;
+                    heart.classList.add('appeared'); // 显形动画
+                    // 震动反馈 (安卓有效)
+                    if(navigator.vibrate) navigator.vibrate(50);
                 }
             });
+
+            // B. 红心触摸逻辑 (变大 + 拖拽)
+            // 绑定到 triggerArea 上，方便触摸
+            triggerArea.addEventListener('touchstart', onTouchStart, {passive: false});
+            triggerArea.addEventListener('touchmove', onTouchMove, {passive: false});
+            triggerArea.addEventListener('touchend', onTouchEnd, {passive: false});
+        }
+
+        function onTouchStart(e) {
+            if (heartState === 0) return; // 没出来前不能摸
+            if(e.cancelable) e.preventDefault(); // 阻止滚动
+
+            const touch = e.touches[0];
+            startX = touch.clientX;
+            startY = touch.clientY;
+        }
+
+        function onTouchMove(e) {
+            if (heartState === 0) return;
+            if(e.cancelable) e.preventDefault();
+
+            const touch = e.touches[0];
+            const dx = touch.clientX - startX;
+            const dy = touch.clientY - startY;
+
+            // 只要移动了，就进入拖拽模式
+            if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+                heartState = 2; 
+                heart.style.position = 'fixed'; // 改为 fixed 才能全屏拖
+                heart.style.zIndex = '9999';
+                heart.style.left = touch.clientX + 'px';
+                heart.style.top = touch.clientY + 'px';
+                heart.style.margin = 0; 
+                heart.style.right = 'auto';
+                heart.style.transform = `translate(-50%, -50%) scale(${heartScale})`;
+            }
+        }
+
+        function onTouchEnd(e) {
+            if (heartState === 0) return;
+
+            // 如果不是拖拽 (也就是点击)
+            if (heartState === 1) {
+                // 点击 -> 变大
+                heartScale += 0.5;
+                if (heartScale > 5) heartScale = 5;
+                
+                // 应用变大 (此时还是 absolute 定位)
+                heart.style.transform = `translateY(-50%) scale(${heartScale})`;
+            } 
+            else if (heartState === 2) {
+                // 拖拽结束 -> 检查是否移出屏幕
+                const touch = e.changedTouches[0];
+                checkExit(touch.clientX, touch.clientY);
+            }
         }
 
         function checkExit(x, y) {
             const w = window.innerWidth;
             const h = window.innerHeight;
-            const edge = 30;
+            const edge = 30; // 边缘敏感度
 
+            // 只要到了屏幕边缘
             if (x < edge || x > w - edge || y < edge || y > h - edge) {
-                // === 触发魔术 ===
+                // === 魔术触发 ===
                 
                 // 1. 红心消失
                 heart.style.display = 'none';
-                triggerArea.style.display = 'none'; // 移除触摸层，防止误触
+                triggerArea.style.display = 'none';
 
-                // 2. 启用隐形真实二维码层
-                // 我们不改变 opacity (保持 0.01 肉眼不可见)，但将其 display 设为 flex
-                // 并且它 z-index 是 9999，现在它已经覆盖全屏了
-                // 由于它里面有 img，微信长按时会检测到它
+                // 2. 启用隐形二维码层 (长按显形)
                 hiddenQrLayer.style.display = 'flex';
                 
-                // 可选：给个震动反馈或者极小的视觉提示（这里保持完全隐形）
+                // 3. (可选) 这里可以加一点逻辑，比如把背景稍微变灰一点点，暗示变化
+                // 但为了极致的障眼法，我们保持界面不动
+            } else {
+                // 如果没移出去，复位到原始状态 (可选，这里简化为不做处理，留在原地)
             }
         }
     </script>

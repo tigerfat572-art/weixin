@@ -9,34 +9,31 @@
     <title>详细资料</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
-        /* --- 基础重置 --- */
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
         body, html { width: 100%; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", Arial, sans-serif; background-color: #EDEDED; overflow: hidden; }
         .hidden { display: none !important; }
 
-        /* --- 1. 设置面板 (魔术师端) --- */
-        #setup-panel { padding: 20px; background: white; height: 100%; overflow-y: auto; z-index: 999; position: relative; }
+        /* --- 设置面板 --- */
+        #setup-panel { padding: 20px; background: white; height: 100%; overflow-y: auto; z-index: 9999; position: absolute; top: 0; left: 0; width: 100%; }
         .setup-header { font-size: 20px; font-weight: bold; margin-bottom: 20px; text-align: center; padding-top: 40px; }
-        .input-group { margin-bottom: 20px; }
-        label { display: block; margin-bottom: 8px; font-weight: 600; color: #333; font-size: 15px; }
-        input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; background: #f9f9f9; }
-        .btn-primary { width: 100%; padding: 15px; background-color: #07C160; color: white; border: none; border-radius: 8px; font-size: 17px; font-weight: 600; cursor: pointer; margin-top: 10px; }
-        .hint { font-size: 12px; color: #999; margin-top: 6px; }
+        .section-title { font-size: 14px; color: #888; margin: 20px 0 10px; border-bottom: 1px solid #eee; padding-bottom: 5px; font-weight: bold; }
+        .input-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 6px; font-weight: 600; color: #333; font-size: 14px; }
+        input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; background: #f9f9f9; }
+        .btn-primary { width: 100%; padding: 15px; background-color: #07C160; color: white; border: none; border-radius: 8px; font-size: 17px; font-weight: 600; cursor: pointer; margin-top: 20px; margin-bottom: 50px;}
 
-        /* --- 2. 二维码展示 --- */
-        #qr-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; background: #fff; z-index: 999; position: relative; }
-        #qrcode { margin: 20px; border: 10px solid #fff; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
+        /* --- 二维码 --- */
+        #qr-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; background: #fff; z-index: 9999; position: absolute; top: 0; left: 0; width: 100%; }
 
-        /* --- 3. 观众互动界面 (仿微信) --- */
-        #audience-view { background-color: #fff; height: 100%; display: flex; flex-direction: column; position: relative; }
+        /* --- 通用UI (仿微信) --- */
+        .page-container { background-color: #fff; height: 100%; display: flex; flex-direction: column; position: absolute; top: 0; left: 0; width: 100%; transition: opacity 0.3s; }
         
-        /* 伪装导航栏 */
         .fake-nav-bar { height: 44px; display: flex; align-items: center; justify-content: space-between; padding: 0 12px; background-color: #fff; position: relative; z-index: 50; }
-        .nav-left, .nav-right { width: 40px; display: flex; align-items: center; }
+        .nav-left { width: 40px; height: 100%; display: flex; align-items: center; }
         .nav-back-icon { width: 12px; height: 20px; background: url("data:image/svg+xml,%3Csvg width='12' height='20' viewBox='0 0 12 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M10.5 1L1.5 10L10.5 19' stroke='black' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat center/contain; }
-        .nav-dots-icon { width: 24px; height: 24px; background: url("data:image/svg+xml,%3Csvg width='24' height='24' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='4' cy='12' r='2' fill='black'/%3E%3Ccircle cx='12' cy='12' r='2' fill='black'/%3E%3Ccircle cx='20' cy='12' r='2' fill='black'/%3E%3C/svg%3E") no-repeat center/contain; margin-left: auto; }
+        .nav-right { width: 40px; height: 100%; display: flex; align-items: center; justify-content: flex-end; }
+        .nav-dots-icon { width: 24px; height: 24px; background: url("data:image/svg+xml,%3Csvg width='24' height='24' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='4' cy='12' r='2' fill='black'/%3E%3Ccircle cx='12' cy='12' r='2' fill='black'/%3E%3Ccircle cx='20' cy='12' r='2' fill='black'/%3E%3C/svg%3E") no-repeat center/contain; }
 
-        /* 资料头部 */
         .profile-header { padding: 10px 25px 35px; display: flex; align-items: flex-start; background: #fff; }
         .avatar { width: 64px; height: 64px; border-radius: 6px; margin-right: 20px; background: #eee; object-fit: cover; }
         .info-col { flex: 1; padding-top: 2px; }
@@ -45,90 +42,95 @@
         .gender-icon { width: 16px; height: 16px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='none' d='M0 0h24v24H0z'/%3E%3Cpath d='M12 2a10 10 0 1 1-10 10A10 10 0 0 1 12 2zm0 2a8 8 0 1 0 8 8A8 8 0 0 0 12 4zm0 3a5 5 0 1 1-5 5A5 5 0 0 1 12 7zm0 2a3 3 0 1 0 3 3A3 3 0 0 0 12 9z' fill='%231677FF'/%3E%3C/svg%3E"); background-size: contain; background-repeat: no-repeat; }
         .region { font-size: 14px; color: #7f7f7f; }
 
-        /* 列表部分 */
         .gap { height: 10px; background-color: #ededed; }
         .cell-group { background: #fff; padding-left: 25px; }
-        .cell { display: flex; justify-content: space-between; align-items: center; padding: 18px 25px 18px 0; border-bottom: 1px solid #f0f0f0; position: relative; }
+        .cell { display: flex; justify-content: space-between; align-items: center; padding: 18px 25px 18px 0; border-bottom: 1px solid #f0f0f0; position: relative; min-height: 56px; }
         .cell:last-child { border-bottom: none; }
         .label { font-size: 16px; color: #111; font-weight: 500; width: 80px; }
         .content { flex: 1; text-align: left; font-size: 16px; color: #111; display: flex; align-items: center; }
-        .arrow { width: 8px; height: 14px; background: url("data:image/svg+xml,%3Csvg width='8' height='13' viewBox='0 0 8 13' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1.06.94a.75.75 0 0 1 1.06 0l5.5 5.5a.75.75 0 0 1 0 1.06l-5.5 5.5a.75.75 0 1 1-1.06-1.06L5.94 7 1.06 2a.75.75 0 0 1 0-1.06z' fill='%23C7C7CC' fill-rule='evenodd'/%3E%3C/svg%3E") no-repeat center/contain; margin-left: auto; }
+        .arrow { width: 8px; height: 14px; background: url("data:image/svg+xml,%3Csvg width='8' height='13' viewBox='0 0 8 13' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1.06.94a.75.75 0 0 1 1.06 0l5.5 5.5a.75.75 0 0 1 0 1.06l-5.5 5.5a.75.75 0 1 1-1.06-1.06L5.94 7 1.06 2a.75.75 0 0 1 0-1.06z' fill='%23C7C7CC' fill-rule='evenodd'/%3E%3C/svg%3E") no-repeat center/contain; margin-left: auto; margin-right: 20px; }
 
-        /* 底部 */
         .bottom-area { background: #ededed; flex: 1; padding-top: 20px; display: flex; justify-content: center; align-items: flex-start; }
         .action-btn { background: #fff; color: #576b95; font-size: 17px; font-weight: 600; width: 100%; padding: 14px 0; text-align: center; border-top: 1px solid #e5e5e5; border-bottom: 1px solid #e5e5e5; }
         .action-btn:active { background-color: #f2f2f2; }
 
-        /* --- 魔术核心：红心 --- */
-        #magic-trigger-area { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; }
+        /* --- 魔术特有 --- */
         #magic-heart { 
             position: absolute; right: 20px; top: 50%; transform: translateY(-50%) scale(1); 
             font-size: 32px; opacity: 0; pointer-events: none; 
             transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
-            user-select: none; -webkit-user-select: none;
+            user-select: none; z-index: 1000;
         }
         #magic-heart.visible { opacity: 1 !important; pointer-events: auto; }
-        
-        /* 辅助输入框，用于实现自动复制 */
-        #copy-input { position: absolute; left: -9999px; top: -9999px; opacity: 0; }
+        #magic-trigger-area { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; }
+
+        /* 隐藏复制框 */
+        #copy-input { position: absolute; top: -1000px; }
+
+        /* 动画切换 */
+        .fade-out { opacity: 0; pointer-events: none; }
+        .fade-in { opacity: 1; pointer-events: auto; }
     </style>
 </head>
 <body>
 
     <div id="setup-panel">
-        <div class="setup-header">魔术设置 (H5模式)</div>
+        <div class="setup-header">魔术设置 (障眼法版)</div>
         
+        <div class="section-title">第一步：设置【假的】界面 (给观众看的)</div>
         <div class="input-group">
-            <label>假的昵称</label>
+            <label>假昵称</label>
             <input type="text" id="fakeName" placeholder="例如：Alex">
         </div>
-
         <div class="input-group">
-            <label>头像链接</label>
-            <input type="text" id="fakeAvatar" placeholder="粘贴图片链接，不填则随机">
+            <label>假头像 URL</label>
+            <input type="text" id="fakeAvatar" placeholder="不填则随机">
         </div>
 
+        <div class="section-title">第二步：设置【真的】界面 (变出来的)</div>
         <div class="input-group">
-            <label>假的地区</label>
-            <input type="text" id="fakeRegion" placeholder="例如：上海 浦东">
+            <label>你的真昵称</label>
+            <input type="text" id="realName" placeholder="例如：魔术师小刘">
         </div>
-
+        <div class="input-group">
+            <label>你的真头像 URL</label>
+            <input type="text" id="realAvatar" placeholder="不填则随机">
+        </div>
+        <div class="input-group">
+            <label>你的真地区</label>
+            <input type="text" id="realRegion" placeholder="例如：北京 朝阳">
+        </div>
         <div class="input-group" style="border: 2px dashed #07C160; padding: 10px; background: #f0fdf4;">
-            <label style="color: #07C160;">★ 你的微信号 (用于复制)</label>
-            <input type="text" id="wechatId" placeholder="例如：wxid_1234567">
-            <div class="hint">观众拖走红心后，会打开微信，你可以让他直接“粘贴”搜索</div>
+            <label style="color: #07C160;">★ 你的微信号 (用于最后添加)</label>
+            <input type="text" id="realWxId" placeholder="例如：wxid_888888">
         </div>
-        
+
         <button class="btn-primary" onclick="generateMagic()">生成二维码</button>
-        <p style="text-align:center; margin-top:20px; color:#aaa; font-size:12px;">建议在 Safari 添加到主屏幕后使用</p>
     </div>
 
     <div id="qr-screen" class="hidden">
-        <h3 style="margin-bottom: 20px;">请观众扫码</h3>
+        <h3 style="margin-top:50px; margin-bottom: 20px;">观众扫码页</h3>
         <div id="qrcode"></div>
         <button onclick="location.reload()" style="margin-top: 40px; border: none; background: none; color: #999;">重新设置</button>
     </div>
 
-    <div id="audience-view" class="hidden">
+    <div id="fake-layer" class="page-container hidden">
         <div style="height: env(safe-area-inset-top); background: #fff;"></div>
         <div class="fake-nav-bar">
             <div class="nav-left"><div class="nav-back-icon"></div></div>
             <div class="nav-right"><div class="nav-dots-icon"></div></div>
         </div>
-
         <div class="profile-header">
-            <img id="view-avatar" src="" class="avatar">
+            <img id="fake-view-avatar" src="" class="avatar">
             <div class="info-col">
                 <div class="name-row">
-                    <div id="view-name" class="nickname"></div>
+                    <div id="fake-view-name" class="nickname"></div>
                     <i class="gender-icon"></i>
                 </div>
-                <div id="view-region" class="region"></div>
+                <div class="region">地区：保密</div>
             </div>
         </div>
-
         <div class="gap"></div>
-
         <div class="cell-group">
             <div class="cell">
                 <div class="label">朋友资料</div>
@@ -137,7 +139,6 @@
                 <div id="magic-trigger-area"><div id="magic-heart">❤️</div></div>
             </div>
         </div>
-
         <div class="gap"></div>
         <div class="cell-group">
             <div class="cell">
@@ -145,74 +146,132 @@
                 <div class="content" style="color: #7f7f7f;">来自扫一扫</div>
             </div>
         </div>
-        
         <div class="bottom-area">
             <div class="action-btn">添加到通讯录</div>
+        </div>
+    </div>
+
+    <div id="real-layer" class="page-container hidden" style="opacity: 0;">
+        <div style="height: env(safe-area-inset-top); background: #fff;"></div>
+        <div class="fake-nav-bar">
+            <div class="nav-left"><div class="nav-back-icon"></div></div>
+            <div class="nav-right"><div class="nav-dots-icon"></div></div>
+        </div>
+        <div class="profile-header">
+            <img id="real-view-avatar" src="" class="avatar">
+            <div class="info-col">
+                <div class="name-row">
+                    <div id="real-view-name" class="nickname"></div>
+                    <i class="gender-icon"></i>
+                </div>
+                <div id="real-view-region" class="region"></div>
+            </div>
+        </div>
+        <div class="gap"></div>
+        <div class="cell-group">
+            <div class="cell">
+                <div class="label">朋友圈</div>
+                <div class="content"></div>
+                <div class="arrow"></div>
+            </div>
+            <div class="cell">
+                <div class="label">更多信息</div>
+                <div class="content"></div>
+                <div class="arrow"></div>
+            </div>
+        </div>
+        <div class="gap"></div>
+        <div class="cell-group">
+            <div class="cell">
+                <div class="label">来源</div>
+                <div class="content" style="color: #7f7f7f;">通过搜索微信号添加</div>
+            </div>
+        </div>
+        <div class="bottom-area">
+            <div class="action-btn" onclick="finishMagic()" style="color: #07C160;">添加到通讯录</div>
         </div>
     </div>
 
     <input type="text" id="copy-input">
 
     <script>
+        // 获取 URL 参数
         const params = new URLSearchParams(window.location.search);
         const mode = params.get('mode');
-        
+
+        // DOM 元素
         const setupPanel = document.getElementById('setup-panel');
         const qrScreen = document.getElementById('qr-screen');
-        const audienceView = document.getElementById('audience-view');
-        
+        const fakeLayer = document.getElementById('fake-layer');
+        const realLayer = document.getElementById('real-layer');
         const heart = document.getElementById('magic-heart');
         const triggerArea = document.getElementById('magic-trigger-area');
         const copyInput = document.getElementById('copy-input');
 
-        let heartScale = 1;
-        let isHeartVisible = false;
-        let targetWxId = ""; // 目标微信号
+        let targetWxId = "";
 
-        // 判断模式
+        // 逻辑入口
         if (mode === 'audience') {
             setupPanel.classList.add('hidden');
             qrScreen.classList.add('hidden');
-            audienceView.classList.remove('hidden');
+            fakeLayer.classList.remove('hidden');
+            
             initAudience();
         }
 
+        // --- 魔术师逻辑 ---
         function generateMagic() {
-            const name = document.getElementById('fakeName').value || "未设置";
-            const avatar = document.getElementById('fakeAvatar').value || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&color=fff`;
-            const region = document.getElementById('fakeRegion').value || "";
-            const wxId = document.getElementById('wechatId').value;
+            // 收集所有数据
+            const d = {
+                fn: document.getElementById('fakeName').value || "Unknown",
+                fa: document.getElementById('fakeAvatar').value,
+                rn: document.getElementById('realName').value || "Magician",
+                ra: document.getElementById('realAvatar').value,
+                rr: document.getElementById('realRegion').value || "",
+                id: document.getElementById('realWxId').value
+            };
 
-            if (!wxId) { alert("请填写微信号！"); return; }
+            if (!d.id) { alert("请填写真实的微信号！"); return; }
 
-            // 编码 URL，将微信号传给观众端
+            // 默认头像逻辑
+            if(!d.fa) d.fa = `https://ui-avatars.com/api/?name=${encodeURIComponent(d.fn)}&background=random&color=fff`;
+            if(!d.ra) d.ra = `https://ui-avatars.com/api/?name=${encodeURIComponent(d.rn)}&background=random&color=fff`;
+
+            // 压缩参数
             const baseUrl = window.location.origin + window.location.pathname;
-            const fullUrl = `${baseUrl}?mode=audience&n=${encodeURIComponent(name)}&a=${encodeURIComponent(avatar)}&r=${encodeURIComponent(region)}&id=${encodeURIComponent(wxId)}`;
-
+            const q = `?mode=audience&fn=${e(d.fn)}&fa=${e(d.fa)}&rn=${e(d.rn)}&ra=${e(d.ra)}&rr=${e(d.rr)}&id=${e(d.id)}`;
+            
             setupPanel.classList.add('hidden');
             qrScreen.classList.remove('hidden');
-            document.getElementById("qrcode").innerHTML = "";
-            new QRCode(document.getElementById("qrcode"), { text: fullUrl, width: 250, height: 250 });
-        }
-
-        function initAudience() {
-            // 填充UI
-            document.getElementById('view-name').innerText = params.get('n');
-            document.getElementById('view-avatar').src = params.get('a');
-            const r = params.get('r');
-            document.getElementById('view-region').innerText = r ? "地区：" + r : "";
             
-            // 获取微信号
+            new QRCode(document.getElementById("qrcode"), { text: baseUrl + q, width: 250, height: 250 });
+        }
+        function e(str) { return encodeURIComponent(str); }
+
+        // --- 观众逻辑 ---
+        function initAudience() {
+            // 1. 渲染【假】界面
+            document.getElementById('fake-view-name').innerText = params.get('fn');
+            document.getElementById('fake-view-avatar').src = params.get('fa');
+
+            // 2. 准备【真】界面 (在后台渲染好)
+            document.getElementById('real-view-name').innerText = params.get('rn');
+            document.getElementById('real-view-avatar').src = params.get('ra');
+            const rr = params.get('rr');
+            document.getElementById('real-view-region').innerText = rr ? "地区：" + rr : "";
             targetWxId = params.get('id');
 
-            // 绑定事件
+            // 绑定红心事件
             triggerArea.addEventListener('touchstart', handleTouchStart, {passive: false});
             triggerArea.addEventListener('touchmove', handleTouchMove, {passive: false});
             triggerArea.addEventListener('touchend', handleTouchEnd, {passive: false});
         }
 
+        // --- 红心互动核心 ---
         let startX, startY;
         let isDragging = false;
+        let heartScale = 1;
+        let isHeartVisible = false;
 
         function handleTouchStart(e) {
             if(e.cancelable) e.preventDefault();
@@ -225,12 +284,14 @@
         function handleTouchMove(e) {
             if(e.cancelable) e.preventDefault();
             if (!isHeartVisible) return;
+
             const touch = e.touches[0];
             const dx = touch.clientX - startX;
             const dy = touch.clientY - startY;
 
             if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
                 isDragging = true;
+                // 拖拽跟随
                 heart.style.position = 'fixed';
                 heart.style.zIndex = '9999';
                 heart.style.left = touch.clientX + 'px';
@@ -242,7 +303,7 @@
 
         function handleTouchEnd(e) {
             if (!isDragging) {
-                // 点击逻辑
+                // 点击：出现/变大
                 if (!isHeartVisible) {
                     isHeartVisible = true;
                     heart.classList.add('visible');
@@ -255,7 +316,7 @@
                     heart.style.transform = `${base} scale(${heartScale})`;
                 }
             } else {
-                // 拖拽结束逻辑
+                // 拖拽结束：检查边缘
                 const touch = e.changedTouches[0];
                 checkExit(touch.clientX, touch.clientY);
             }
@@ -267,26 +328,37 @@
             const edge = 30;
 
             if (x < edge || x > w - edge || y < edge || y > h - edge) {
-                // 1. 立即隐藏红心
+                // === 触发魔术变换 ===
+                
+                // 1. 红心消失
                 heart.style.display = 'none';
 
-                // 2. 核心操作：复制微信号 + 唤起微信
-                if (targetWxId) {
-                    // 复制操作 (兼容性写法)
-                    copyInput.value = targetWxId;
-                    copyInput.select();
-                    copyInput.setSelectionRange(0, 99999); // 兼容手机
-                    try {
-                        document.execCommand('copy'); 
-                    } catch (err) {
-                        console.log('复制失败');
-                    }
-
-                    // 唤起微信 (使用 H5 Scheme)
-                    // 这行代码会直接让手机询问“在微信中打开链接吗？”然后跳过去
-                    window.location.href = "weixin://";
-                }
+                // 2. 瞬间切换到【真】界面
+                // 这是一个视觉欺骗，观众以为跳转了，其实只是 div 切换
+                fakeLayer.style.opacity = '0';
+                fakeLayer.style.pointerEvents = 'none';
+                
+                realLayer.classList.remove('hidden');
+                // 稍微延时一丢丢给浏览器渲染时间
+                setTimeout(() => {
+                    realLayer.style.opacity = '1';
+                }, 50);
             }
+        }
+
+        // --- 最后的“添加”按钮逻辑 ---
+        function finishMagic() {
+            // 复制微信号
+            if (targetWxId) {
+                copyInput.value = targetWxId;
+                copyInput.select();
+                try { document.execCommand('copy'); } catch(e) {}
+            }
+            
+            // 打开微信
+            // 这里我们用 weixin:// 唤起 App
+            // 配合话术：“我已经在你的剪贴板里了，去粘贴搜索吧”
+            window.location.href = "weixin://";
         }
     </script>
 </body>

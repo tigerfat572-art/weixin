@@ -3,25 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="format-detection" content="telephone=no">
-    <title>
-
-
-
-
-      
-    </title>
+    <title>详细资料</title>
+    <meta name="theme-color" content="#ffffff">
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
     <style>
-        /* --- 基础设置 --- */
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; -webkit-user-select: none; user-select: none; }
-        body, html { width: 100%; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", Arial, sans-serif; background-color: #EDEDED; overflow: hidden; }
+        body, html { width: 100%; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", Arial, sans-serif; background-color: #EDEDED; overflow: hidden; overscroll-behavior: none; }
         .hidden { display: none !important; }
 
-        /* --- 1. 设置面板 --- */
+        /* --- 设置面板 --- */
         #setup-panel { padding: 20px; background: white; height: 100%; overflow-y: auto; z-index: 9999; position: absolute; top: 0; left: 0; width: 100%; }
         .setup-title { font-size: 20px; font-weight: 800; text-align: center; margin: 30px 0; color: #333; }
         .input-group { margin-bottom: 20px; }
@@ -29,16 +22,16 @@
         input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; background: #f9f9f9; -webkit-user-select: text; user-select: text; }
         .btn-primary { width: 100%; padding: 16px; background-color: #07C160; color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: 600; cursor: pointer; margin-top: 20px; box-shadow: 0 4px 12px rgba(7, 193, 96, 0.3); }
 
-        /* --- 2. 二维码展示页 --- */
+        /* --- 二维码页 --- */
         #qr-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; background: #fff; z-index: 9999; position: absolute; top: 0; left: 0; width: 100%; }
 
-        /* --- 3. 观众端 UI --- */
+        /* --- 观众端 --- */
         #app-view { background-color: #EDEDED; height: 100%; display: flex; flex-direction: column; position: relative; width: 100%; }
 
-        /* 资料区域：无假导航栏，直接开始 */
+        /* 资料头部 */
         .profile-container { 
             background: #fff; 
-            padding: 20px 24px 35px; 
+            padding: 24px 24px 35px; /* 顶部留白适配微信顶栏 */
             display: flex; align-items: flex-start; 
         }
         .avatar { width: 64px; height: 64px; border-radius: 6px; margin-right: 20px; background: #eee; object-fit: cover; flex-shrink: 0; }
@@ -58,44 +51,40 @@
 
         .bottom-area { flex: 1; display: flex; justify-content: center; padding-top: 24px; }
         .action-btn { background: #fff; color: #576b95; font-size: 17px; font-weight: 700; width: 100%; padding: 16px 0; text-align: center; border-top: 0.5px solid #e5e5e5; border-bottom: 0.5px solid #e5e5e5; }
+        .action-btn:active { background-color: #f2f2f2; }
 
         /* --- 魔术红心 --- */
-        /* 全屏触摸层：红心出现后启用，接管所有点击和拖拽 */
         #magic-trigger-area { 
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
             z-index: 500; display: none; 
         }
-        
         #magic-heart { 
-            position: absolute; /* 初始在cell里 */
+            position: absolute; 
             font-size: 32px; color: #fa5151; 
             opacity: 0; 
-            /* 弹性动画，让变大更生动 */
             transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
             z-index: 1000;
-            pointer-events: none; /* 必须由 trigger-area 接管事件 */
+            pointer-events: none; 
         }
         #magic-heart.appeared { opacity: 1; }
 
-        /* --- 隐形真实二维码 (结局层) --- */
+        /* --- 隐形真实二维码 --- */
         #hidden-real-qrcode {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 9999; 
-            display: none; 
-            opacity: 0.01; 
-            align-items: center; justify-content: center;
+            z-index: 9999; display: none; 
+            opacity: 0.01; align-items: center; justify-content: center;
             background: white; 
         }
-        #hidden-real-qrcode img {
-            width: 300px; height: 300px; 
-            opacity: 0.01; /* 隐形 */
-        }
+        #hidden-real-qrcode img { width: 300px; height: 300px; opacity: 0.01; }
+        
+        /* 隐藏的复制框 */
+        #clipboard-target { position: fixed; top: -9999px; }
     </style>
 </head>
 <body>
 
     <div id="setup-panel">
-        <div class="setup-title">魔术设置 (终极版)</div>
+        <div class="setup-title">魔术设置 (完整功能版)</div>
         
         <div class="input-group">
             <label>1. 假的昵称</label>
@@ -105,9 +94,20 @@
             <label>2. 假的头像 URL</label>
             <input type="text" id="fakeAvatar" placeholder="不填则随机">
         </div>
+        
+        <div class="input-group">
+            <label>3. 假的地区</label>
+            <input type="text" id="fakeRegion" value="浙江 杭州">
+        </div>
+
+        <div class="input-group">
+            <label>4. 你的微信号 (ID)</label>
+            <input type="text" id="realWxId" placeholder="例如：wxid_888888">
+            <div style="font-size:12px; color:#666; margin-top:5px;">点击“添加到通讯录”时会复制此ID</div>
+        </div>
 
         <div class="input-group" style="background:#f0fdf4; padding:15px; border-radius:10px; border:1px dashed #07C160;">
-            <label style="color:#07C160;">3. 真实的二维码链接</label>
+            <label style="color:#07C160;">5. 真实的二维码链接 (核心)</label>
             <input type="text" id="realQrUrl" placeholder="http://weixin.qq.com/r/...">
             <div style="font-size:12px; color:#666; margin-top:5px;">
                 去【草料二维码】解码你的微信名片，填入解码后的链接。
@@ -115,15 +115,12 @@
         </div>
 
         <button class="btn-primary" onclick="generateMagic()">生成二维码</button>
-        <div style="text-align:center; color:#fa5151; font-size:12px; margin-top:10px;">
-            提示：表演时请务必使用【微信】扫一扫
-        </div>
     </div>
 
     <div id="qr-screen" class="hidden">
         <h3 style="margin-top:60px; margin-bottom:20px; color:#333;">观众扫码页</h3>
         <div id="qrcode"></div>
-        <p style="text-align:center; color:#999; margin-top:20px; font-size:13px;">流程：点资料出心 -> 点心变大 -> 拖走消失 -> 长按显形</p>
+        <p style="text-align:center; color:#999; margin-top:20px; font-size:13px;">请观众使用微信扫一扫</p>
         <button onclick="location.reload()" style="margin-top:40px; border:none; background:none; color:#999;">重新设置</button>
     </div>
 
@@ -136,7 +133,7 @@
                     <span id="ui-name" class="nickname"></span>
                     <i class="gender-icon"></i>
                 </div>
-                <div class="sub-info">地区：保密</div>
+                <div id="ui-region" class="sub-info"></div>
             </div>
         </div>
 
@@ -161,26 +158,36 @@
         </div>
 
         <div class="bottom-area">
-            <div class="action-btn">添加到通讯录</div>
+            <div class="action-btn" id="add-btn">添加到通讯录</div>
         </div>
 
         <div id="magic-trigger-area"></div>
 
         <div id="hidden-real-qrcode"></div>
+        
+        <input type="text" id="clipboard-target">
     </div>
 
     <script>
         const setupPanel = document.getElementById('setup-panel');
         const qrScreen = document.getElementById('qr-screen');
         const appView = document.getElementById('app-view');
+        
         const uiAvatar = document.getElementById('ui-avatar');
         const uiName = document.getElementById('ui-name');
+        const uiRegion = document.getElementById('ui-region');
+        
         const profileRow = document.getElementById('profile-row');
         const heart = document.getElementById('magic-heart');
         const triggerArea = document.getElementById('magic-trigger-area');
         const hiddenQrLayer = document.getElementById('hidden-real-qrcode');
+        const addBtn = document.getElementById('add-btn');
+        const clipboardTarget = document.getElementById('clipboard-target');
 
         const params = new URLSearchParams(window.location.search);
+        
+        let targetWxId = "";
+
         if (params.get('mode') === 'show') {
             setupPanel.classList.add('hidden');
             qrScreen.classList.add('hidden');
@@ -188,14 +195,16 @@
             
             uiName.innerText = decodeURIComponent(params.get('fn') || "");
             uiAvatar.src = decodeURIComponent(params.get('fa') || "");
+            
+            // 恢复地区显示
+            const r = decodeURIComponent(params.get('fr') || "");
+            uiRegion.innerText = r ? "地区：" + r : "";
+            
+            targetWxId = decodeURIComponent(params.get('wid') || "");
 
             const realUrl = decodeURIComponent(params.get('rurl'));
             if (realUrl) {
-                new QRCode(hiddenQrLayer, {
-                    text: realUrl,
-                    width: 300, height: 300,
-                    correctLevel: QRCode.CorrectLevel.L 
-                });
+                new QRCode(hiddenQrLayer, { text: realUrl, width: 300, height: 300, correctLevel: QRCode.CorrectLevel.L });
             }
             initInteractions();
         }
@@ -203,22 +212,26 @@
         function generateMagic() {
             const fn = document.getElementById('fakeName').value || "Unknown";
             const fa = document.getElementById('fakeAvatar').value || `https://ui-avatars.com/api/?name=${encodeURIComponent(fn)}&background=random&color=fff`;
+            const fr = document.getElementById('fakeRegion').value || "";
+            const wid = document.getElementById('realWxId').value || "";
             const rurl = document.getElementById('realQrUrl').value;
+
             if(!rurl) { alert("请填写二维码链接"); return; }
+            
             const baseUrl = window.location.origin + window.location.pathname;
-            const query = `?mode=show&fn=${encodeURIComponent(fn)}&fa=${encodeURIComponent(fa)}&rurl=${encodeURIComponent(rurl)}`;
+            const query = `?mode=show&fn=${encodeURIComponent(fn)}&fa=${encodeURIComponent(fa)}&fr=${encodeURIComponent(fr)}&wid=${encodeURIComponent(wid)}&rurl=${encodeURIComponent(rurl)}`;
+            
             setupPanel.classList.add('hidden');
             qrScreen.classList.remove('hidden');
             document.getElementById("qrcode").innerHTML = "";
             new QRCode(document.getElementById("qrcode"), { text: baseUrl + query, width: 250, height: 250 });
         }
 
-        // --- 核心交互变量 ---
-        let heartState = 0; // 0:未出现, 1:已出现
+        // --- 交互逻辑 ---
+        let heartState = 0; 
         let heartScale = 1; 
         let startX, startY;
         let isDragging = false; 
-        // 记录红心当前的绝对位置
         let currentX = 0; 
         let currentY = 0;
 
@@ -227,36 +240,41 @@
             profileRow.addEventListener('click', (e) => {
                 if (heartState === 0) {
                     heartState = 1;
-                    
-                    // 获取初始位置
                     const rect = heart.getBoundingClientRect();
                     currentX = rect.left + rect.width / 2;
                     currentY = rect.top + rect.height / 2;
 
-                    // 显形
                     heart.classList.add('appeared');
-                    
-                    // 启用全屏触摸层
                     triggerArea.style.display = 'block';
 
-                    // 立即将红心变为 Fixed 定位，并放置在刚才计算的绝对坐标上
                     heart.style.position = 'fixed';
                     heart.style.left = currentX + 'px';
                     heart.style.top = currentY + 'px';
                     heart.style.margin = '0';
                     heart.style.right = 'auto';
                     heart.style.zIndex = '1000';
-                    // 初始 transform
                     heart.style.transform = `translate(-50%, -50%) scale(1)`;
 
                     if(navigator.vibrate) navigator.vibrate(50);
                 }
             });
 
-            // 2. 触摸控制 (接管变大和拖拽)
+            // 2. 触摸控制
             triggerArea.addEventListener('touchstart', onTouchStart, {passive: false});
             triggerArea.addEventListener('touchmove', onTouchMove, {passive: false});
             triggerArea.addEventListener('touchend', onTouchEnd, {passive: false});
+            
+            // 3. 按钮复制ID功能
+            addBtn.addEventListener('click', () => {
+                if(targetWxId) {
+                    clipboardTarget.value = targetWxId;
+                    clipboardTarget.select();
+                    try { document.execCommand('copy'); } catch(e){}
+                    // 简单的反馈动画
+                    addBtn.style.backgroundColor = "#e6e6e6";
+                    setTimeout(() => addBtn.style.backgroundColor = "#fff", 100);
+                }
+            });
         }
 
         function onTouchStart(e) {
@@ -265,7 +283,7 @@
             const touch = e.touches[0];
             startX = touch.clientX;
             startY = touch.clientY;
-            isDragging = false; // 每次触摸开始，先假设是点击
+            isDragging = false;
         }
 
         function onTouchMove(e) {
@@ -275,14 +293,10 @@
             const dx = touch.clientX - startX;
             const dy = touch.clientY - startY;
 
-            // 只有移动超过 10px 才算拖拽
             if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
                 isDragging = true;
-                
-                // 更新位置
                 currentX = touch.clientX;
                 currentY = touch.clientY;
-
                 heart.style.left = currentX + 'px';
                 heart.style.top = currentY + 'px';
                 heart.style.transform = `translate(-50%, -50%) scale(${heartScale})`;
@@ -291,15 +305,11 @@
 
         function onTouchEnd(e) {
             if (heartState === 0) return;
-
             if (!isDragging) {
-                // === 点击逻辑 (变大) ===
                 heartScale += 0.5;
                 if (heartScale > 5) heartScale = 5;
-                // 在当前位置变大
                 heart.style.transform = `translate(-50%, -50%) scale(${heartScale})`;
             } else {
-                // === 拖拽结束逻辑 (检查边缘) ===
                 const touch = e.changedTouches[0];
                 checkExit(touch.clientX, touch.clientY);
             }
@@ -308,15 +318,10 @@
         function checkExit(x, y) {
             const w = window.innerWidth;
             const h = window.innerHeight;
-            const edge = 30; // 边缘容错
-
-            // 判断是否移出屏幕
+            const edge = 30; 
             if (x < edge || x > w - edge || y < edge || y > h - edge) {
-                // 1. 红心消失
                 heart.style.display = 'none';
                 triggerArea.style.display = 'none';
-                
-                // 2. 隐形二维码层开启 (覆盖全屏)
                 hiddenQrLayer.style.display = 'flex';
             }
         }
